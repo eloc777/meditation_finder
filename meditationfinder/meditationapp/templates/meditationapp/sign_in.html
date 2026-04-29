@@ -1,0 +1,51 @@
+{% extends "meditationapp/base.html" %}
+
+{% block title %}Sign in — Mindful Meetups{% endblock %}
+
+{% block content %}
+  <main class="flex-grow-1 d-flex align-items-center py-5">
+    <div class="container" style="max-width: 420px;">
+      <h1 class="h3 mb-4 text-center">Sign in</h1>
+      <p class="text-muted small text-center mb-4">Optional — browse the directory without an account.</p>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <form action="#" method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label" for="username">Username or email</label>
+              <input type="text" class="form-control" id="username" name="username" autocomplete="username" placeholder="you@example.com">
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="password">Password</label>
+              <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" placeholder="••••••••">
+            </div>
+            <div class="d-grid mb-3">
+              <button type="submit" class="btn btn-primary">Sign in</button>
+            </div>
+          </form>
+          <p class="text-center text-muted small mb-2">Or continue with</p>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-outline-secondary"><i class="bi bi-google me-2"></i>Google</button>
+            <button type="button" class="btn btn-outline-secondary"><i class="bi bi-facebook me-2"></i>Facebook</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-center mt-4 mb-0">
+        <a href="{% url 'index' %}" class="text-decoration-none">← Back to group finder</a>
+      </p>
+      <p class="text-center small text-muted mt-2 mb-0">
+        Group managers can open the <a href="{% url 'group_dashboard' %}">dashboard</a> after signing in.
+      </p>
+    </div>
+  </main>
+{% endblock %}
+
+{% block footer %}
+  <footer class="border-top bg-white py-3 mt-auto">
+    <div class="container text-center small text-muted">
+      <p class="mb-0">&copy; 2026 Mindful Meetups</p>
+    </div>
+  </footer>
+{% endblock %}

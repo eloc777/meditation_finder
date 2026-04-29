@@ -1,0 +1,205 @@
+{% extends "meditationapp/base.html" %}
+
+{% block title %}Group dashboard — Mindful Meetups{% endblock %}
+
+{% block header %}
+  <header>
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1 fs-5">Group manager dashboard</span>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'index' %}"><i class="bi bi-house-door me-1"></i>Return to main site</a>
+      </div>
+    </nav>
+  </header>
+{% endblock %}
+
+{% block content %}
+  <div class="flex-grow-1 container-fluid px-0">
+    <div class="row g-0 flex-grow-1" style="min-height: calc(100vh - 56px);">
+      <aside class="col-lg-3 col-xl-2 border-end bg-white p-3">
+        <h2 class="h6 text-uppercase text-muted mb-3">Your groups</h2>
+        <div class="list-group list-group-flush">
+          <a href="#" class="list-group-item list-group-item-action active" aria-current="true">
+            Brisbane Mindfulness Circle
+            <span class="d-block small text-white-50">St Lucia</span>
+          </a>
+          <a href="#" class="list-group-item list-group-item-action">
+            West End Zen Sit
+            <span class="d-block small text-muted">West End</span>
+          </a>
+        </div>
+        <p class="small text-muted mt-3 mb-0">Select a group to manage its listing and sessions.</p>
+      </aside>
+
+      <div class="col-lg-9 col-xl-10 p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+          <h1 class="h3 mb-0">Brisbane Mindfulness Circle</h1>
+          <span class="badge text-bg-secondary">Status: approved</span>
+        </div>
+
+        <section class="card shadow-sm mb-4">
+          <div class="card-header fw-semibold">Group information</div>
+          <div class="card-body">
+            <form action="#" method="post">
+              {% csrf_token %}
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label" for="g-name">Name</label>
+                  <input type="text" class="form-control" id="g-name" value="Brisbane Mindfulness Circle">
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="g-desc">Description</label>
+                  <textarea class="form-control" id="g-desc" rows="3">Weekly guided sits and occasional half-day retreats. Beginners welcome.</textarea>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="g-style">Style</label>
+                  <input type="text" class="form-control" id="g-style" value="Mindfulness">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="g-religion">Religion</label>
+                  <input type="text" class="form-control" id="g-religion" value="Secular">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="g-cost">Cost type</label>
+                  <select class="form-select" id="g-cost">
+                    <option value="free">Free</option>
+                    <option value="donation" selected>Donation</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="g-suburb">Suburb</label>
+                  <input type="text" class="form-control" id="g-suburb" value="St Lucia">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="g-postcode">Postcode</label>
+                  <input type="text" class="form-control" id="g-postcode" value="4067">
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="g-link">Public link</label>
+                  <input type="url" class="form-control" id="g-link" value="https://example.org/mindful-brisbane">
+                </div>
+              </div>
+              <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="card shadow-sm mb-4">
+          <div class="card-header fw-semibold">Sessions</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Title</th>
+                    <th>Scheduled</th>
+                    <th>Recurrence</th>
+                    <th>Suburb</th>
+                    <th>Postcode</th>
+                    <th>Meeting link</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Wednesday sit</td>
+                    <td class="small">Wed 7:00 pm – 8:00 pm</td>
+                    <td><span class="badge text-bg-primary">Weekly</span></td>
+                    <td>St Lucia</td>
+                    <td>4067</td>
+                    <td class="small">—</td>
+                    <td class="text-end text-nowrap">
+                      <button type="button" class="btn btn-sm btn-outline-primary">Edit</button>
+                      <button type="button" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Sunday open sit</td>
+                    <td class="small">Sun 9:00 am – 10:30 am</td>
+                    <td><span class="badge text-bg-primary">Weekly</span></td>
+                    <td><span class="text-muted">(inherits group)</span></td>
+                    <td><span class="text-muted">—</span></td>
+                    <td class="small"><a href="#">zoom.example/abc</a></td>
+                    <td class="text-end text-nowrap">
+                      <button type="button" class="btn btn-sm btn-outline-primary">Edit</button>
+                      <button type="button" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="card shadow-sm">
+          <div class="card-header fw-semibold">Add new session</div>
+          <div class="card-body">
+            <form action="#" method="post">
+              {% csrf_token %}
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="s-title">Title</label>
+                  <input type="text" class="form-control" id="s-title" placeholder="e.g. Friday beginners sit">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="s-style">Style <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text" class="form-control" id="s-style" placeholder="Leave blank to use group default">
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="s-desc">Description <span class="text-muted fw-normal">(optional)</span></label>
+                  <textarea class="form-control" id="s-desc" rows="2" placeholder="Short note for this session"></textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="s-from">Starts</label>
+                  <input type="datetime-local" class="form-control" id="s-from">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="s-to">Ends</label>
+                  <input type="datetime-local" class="form-control" id="s-to">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="s-suburb">Suburb <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text" class="form-control" id="s-suburb" placeholder="Inherit from group if empty">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="s-pc">Postcode <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text" class="form-control" id="s-pc" placeholder="">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="s-link">Meeting link <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="url" class="form-control" id="s-link" placeholder="For online sessions">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="s-recurring">Recurrence</label>
+                  <select class="form-select" id="s-recurring">
+                    <option value="0">One-off</option>
+                    <option value="1">Recurring</option>
+                  </select>
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label" for="s-recurrence-pattern">Recurrence details <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text" class="form-control" id="s-recurrence-pattern" placeholder="e.g. Weekly on Wednesdays">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="s-max">Max participants</label>
+                  <input type="number" class="form-control" id="s-max" placeholder="—" min="1">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="s-cost">Cost <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text" class="form-control" id="s-cost" placeholder="e.g. 0 or donation">
+                </div>
+              </div>
+              <div class="mt-3">
+                <button type="submit" class="btn btn-success">Add session</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block footer %}{% endblock %}

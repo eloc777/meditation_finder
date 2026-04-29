@@ -1,0 +1,184 @@
+{% extends "meditationapp/base.html" %}
+
+{% block title %}Find a session — Mindful Meetups{% endblock %}
+
+{% block content %}
+  <main class="flex-grow-1">
+    <div class="container py-4">
+      <h1 class="h2 mb-2">Find a meditation session</h1>
+      <p class="text-muted mb-4">Browse upcoming free and donation-based sessions, then learn more about the group behind each one.</p>
+
+      <section class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+              <h2 class="h6 text-uppercase text-muted mb-1">Find sessions that fit your week</h2>
+              <p class="small text-muted mb-0">Start with location, day, time, and whether you want an ongoing group.</p>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#moreFilters" aria-expanded="{% if more_filters_open %}true{% else %}false{% endif %}" aria-controls="moreFilters">
+              More filters
+            </button>
+          </div>
+
+          <form class="row g-3" action="{% url 'index' %}" method="get">
+            <div class="col-12">
+              <label class="form-label" for="q">Search</label>
+              <input type="search" class="form-control" id="q" name="q" value="{{ selected_q }}" placeholder="Session, group, or description...">
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+              <label class="form-label" for="suburb">Suburb</label>
+              <select class="form-select" id="suburb" name="suburb">
+                <option value="">Any</option>
+                {% for suburb in suburbs %}
+                  <option value="{{ suburb }}" {% if selected_suburb == suburb %}selected{% endif %}>{{ suburb }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-lg-4">
+              <label class="form-label d-block">Day of week</label>
+              <div class="d-flex flex-wrap gap-2">
+                {% for day in day_options %}
+                  <input type="checkbox" class="btn-check" id="day-{{ day.value }}" name="day" value="{{ day.value }}" autocomplete="off" {% if day.value in selected_days %}checked{% endif %}>
+                  <label class="btn btn-outline-primary btn-sm" for="day-{{ day.value }}">{{ day.label }}</label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+              <label class="form-label" for="time_of_day">Time of day</label>
+              <select class="form-select" id="time_of_day" name="time_of_day">
+                <option value="">Any time</option>
+                {% for option in time_options %}
+                  <option value="{{ option.value }}" {% if selected_time == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6 col-lg-1 d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="recurring" name="recurring" value="1" {% if recurring_only %}checked{% endif %}>
+                <label class="form-check-label" for="recurring">Recurring</label>
+              </div>
+            </div>
+
+            <div class="collapse col-12 {% if more_filters_open %}show{% endif %}" id="moreFilters">
+              <div class="row g-3 border-top pt-3 mt-1">
+                <div class="col-md-6 col-lg-3">
+                  <label class="form-label" for="style">Meditation style</label>
+                  <select class="form-select" id="style" name="style">
+                    <option value="">Any style</option>
+                    {% for value, label in style_options %}
+                      <option value="{{ value }}" {% if selected_style == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                  <label class="form-label" for="cost">Cost</label>
+                  <select class="form-select" id="cost" name="cost">
+                    <option value="">Any cost</option>
+                    {% for value, label in cost_options %}
+                      <option value="{{ value }}" {% if selected_cost == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                  <label class="form-label" for="radius">Distance radius</label>
+                  <select class="form-select" id="radius" name="radius">
+                    <option value="">Any distance</option>
+                    <option value="2">Within 2 km</option>
+                    <option value="5">Within 5 km</option>
+                    <option value="10">Within 10 km</option>
+                    <option value="25">Within 25 km</option>
+                  </select>
+                </div>
+                <div class="col-md-6 col-lg-3 d-flex align-items-end">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" role="switch" id="beginner_friendly" name="beginner_friendly" value="1" {% if beginner_friendly %}checked{% endif %}>
+                    <label class="form-check-label" for="beginner_friendly">Beginner friendly</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 d-flex flex-wrap gap-2">
+              <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1"></i>Apply filters</button>
+              <a href="{% url 'index' %}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="h5 mb-3">Upcoming sessions</h2>
+        {% if sessions %}
+          <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for session in sessions %}
+              <div class="col">
+                <div class="card h-100 shadow-sm">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                      <h3 class="h5 card-title mb-1">{{ session.title }}</h3>
+                      <span class="badge {{ session.recurrence_badge_class }}">{{ session.recurrence_label }}</span>
+                    </div>
+                    <p class="small text-muted mb-3">
+                      Hosted by <a href="{% url 'group_profile' session.group.id %}">{{ session.group.name }}</a>
+                    </p>
+                    <ul class="list-unstyled small text-muted mb-3 flex-grow-1">
+                      <li><i class="bi bi-clock me-1"></i><strong>When:</strong> {{ session.next_occurrence|date:"D g:i A" }}-{{ session.scheduled_to|date:"g:i A" }}</li>
+                      <li><i class="bi bi-geo-alt me-1"></i><strong>Location:</strong> {{ session.display_location }}</li>
+                      <li><i class="bi bi-flower1 me-1"></i><strong>Style:</strong> {{ session.display_style }}</li>
+                      <li><i class="bi bi-wallet2 me-1"></i><strong>Cost:</strong> {{ session.group.get_cost_type_display }}</li>
+                    </ul>
+                    <button type="button" class="btn btn-outline-primary mt-auto" data-bs-toggle="modal" data-bs-target="#modalSession{{ session.id }}">View session</button>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info" role="alert">
+            No sessions match those filters yet. Try clearing a filter or checking nearby suburbs.
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </main>
+
+  {% for session in sessions %}
+    <div class="modal fade" id="modalSession{{ session.id }}" tabindex="-1" aria-labelledby="modalSession{{ session.id }}Label" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="modalSession{{ session.id }}Label">{{ session.title }}</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            {% if session.description %}
+              <p>{{ session.description }}</p>
+            {% endif %}
+            <dl class="row small mb-0">
+              <dt class="col-sm-3">Group</dt><dd class="col-sm-9"><a href="{% url 'group_profile' session.group.id %}">{{ session.group.name }}</a></dd>
+              <dt class="col-sm-3">When</dt><dd class="col-sm-9">{{ session.next_occurrence|date:"l, j M Y, g:i A" }}-{{ session.scheduled_to|date:"g:i A" }}</dd>
+              <dt class="col-sm-3">Recurrence</dt><dd class="col-sm-9"><span class="badge {{ session.recurrence_badge_class }}">{{ session.recurrence_label }}</span>{% if session.recurrence_pattern %} {{ session.recurrence_pattern }}{% endif %}</dd>
+              <dt class="col-sm-3">Location</dt><dd class="col-sm-9">{{ session.display_location }}</dd>
+              <dt class="col-sm-3">Style</dt><dd class="col-sm-9">{{ session.display_style }}</dd>
+              <dt class="col-sm-3">Cost</dt><dd class="col-sm-9">{{ session.group.get_cost_type_display }}</dd>
+              {% if session.meeting_link %}
+                <dt class="col-sm-3">Online</dt><dd class="col-sm-9"><a href="{{ session.meeting_link }}">Meeting link</a></dd>
+              {% endif %}
+              {% if session.group.link %}
+                <dt class="col-sm-3">Website</dt><dd class="col-sm-9"><a href="{{ session.group.link }}">{{ session.group.link }}</a></dd>
+              {% endif %}
+            </dl>
+          </div>
+          <div class="modal-footer">
+            <a class="btn btn-primary" href="{% url 'group_profile' session.group.id %}">View group profile</a>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+{% endblock %}
