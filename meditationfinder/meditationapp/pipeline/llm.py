@@ -1,249 +1,155 @@
 import json
 import os
-from urllib.request import Request, urlopen
+from typing import List
+
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 
-PROMPT_VERSION = "session_extract_v1"
-DEFAULT_ANTHROPIC_MODEL = "claude-3-5-haiku-latest"
-DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+PROMPT_VERSION = "session_extract_openai_v1"
+DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 
 
 class LLMExtractionError(Exception):
     pass
 
 
-class LLMClient:
-    provider_name = ""
-    model_name = ""
-
-    def extract_sessions(self, candidate, page_text):
-        raise NotImplementedError
-
-    def suggest_urls(self, candidate, homepage_text, links, max_urls):
-        return heuristic_schedule_urls(links, max_urls)
+class UrlSuggestions(BaseModel):
+    urls: List[str] = Field(description="Internal URLs likely to contain class or session schedules")
 
 
-class AnthropicClient(LLMClient):
-    provider_name = "anthropic"
-
-    def __init__(self):
-        self.api_key = os.getenv("ANTHROPIC_API_KEY", "")
-        self.model_name = os.getenv("ANTHROPIC_MODEL", DEFAULT_ANTHROPIC_MODEL)
-
-    def extract_sessions(self, candidate, page_text):
-        if not self.api_key:
-            raise LLMExtractionError("ANTHROPIC_API_KEY is not set")
-        url = "https://api.anthropic.com/v1/messages"
-        body = {
-            "model": self.model_name,
-            "max_tokens": 1600,
-            "temperature": 0,
-            "messages": [{"role": "user", "content": build_prompt(candidate, page_text)}],
-        }
-        headers = {
-            "Content-Type": "application/json",
-            "x-api-key": self.api_key,
-            "anthropic-version": "2023-06-01",
-        }
-        payload = post_json(url, headers, body)
-        text = "".join(item.get("text", "") for item in payload.get("content", []) if item.get("type") == "text")
-        return text, parse_json_response(text)
+class SessionItem(BaseModel):
+    day: str = ""
+    start_time: str = ""
+    end_time: str = ""
+    session_type: str = ""
+    recurrence: str = ""
+    recurrence_note: str = ""
+    recurrence_end_date: str = ""
+    cost: str = ""
+    beginner_friendly: bool = False
+    notes: str = ""
 
 
-class OpenAIClient(LLMClient):
+class SessionExtractionOutput(BaseModel):
+    group_name: str = ""
+    style: str = ""
+    sessions: List[SessionItem] = Field(default_factory=list)
+    address: str = ""
+    contact: str = ""
+    website: str = ""
+    confidence_score: float = 0.0
+
+
+SESSION_EXTRACT_TEMPLATE = """Extract recurring or upcoming meditation and mindfulness session details from the page text.
+
+{format_instructions}
+
+Use an empty sessions array when no real session is found. Do not invent times.
+If the page lists many identical weekly occurrences, return one session with recurrence set to "weekly".
+
+Candidate:
+Name: {raw_name}
+Address: {raw_address}
+Website: {raw_website}
+
+Page text:
+{page_text}
+"""
+
+
+URL_SUGGEST_TEMPLATE = """Pick up to {max_urls} internal URLs most likely to contain meditation class times, sessions, calendars, timetables, events, or booking schedules.
+
+{format_instructions}
+
+Prefer pages about classes, timetable, schedule, events, meditation, yoga, sessions, booking, calendar, retreats, programs, or weekly practice.
+Do not choose generic privacy, contact, shop, blog, donation, login, cart, or social media pages unless no better schedule-like page exists.
+
+Candidate:
+Name: {raw_name}
+Website: {raw_website}
+
+Homepage text:
+{homepage_text}
+
+Internal links:
+{link_lines}
+"""
+
+
+class OpenAIClient:
     provider_name = "openai"
 
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY", "")
         self.model_name = os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
 
-    def extract_sessions(self, candidate, page_text):
+    def _chat_llm(self, temperature=0.0):
         if not self.api_key:
             raise LLMExtractionError("OPENAI_API_KEY is not set")
-        url = "https://api.openai.com/v1/chat/completions"
-        body = {
-            "model": self.model_name,
-            "temperature": 0,
-            "messages": [{"role": "user", "content": build_prompt(candidate, page_text)}],
-        }
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
-        payload = post_json(url, headers, body)
-        text = payload["choices"][0]["message"]["content"]
-        return text, parse_json_response(text)
-
-
-class GeminiClient(LLMClient):
-    provider_name = "gemini"
-
-    def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY", "")
-        self.model_name = os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
+        return ChatOpenAI(
+            api_key=self.api_key,
+            model=self.model_name,
+            temperature=temperature,
+            timeout=120,
+        )
 
     def extract_sessions(self, candidate, page_text):
-        if not self.api_key:
-            raise LLMExtractionError("GEMINI_API_KEY is not set")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.api_key}"
-        body = {
-            "contents": [
+        parser = JsonOutputParser(pydantic_object=SessionExtractionOutput) 
+        # the parser givs parsing instructions to the model. The model should (hence try except) return json, the parser turns it into python dict 
+        prompt = PromptTemplate(
+            template=SESSION_EXTRACT_TEMPLATE,
+            input_variables=["raw_name", "raw_address", "raw_website", "page_text"],
+            partial_variables={"format_instructions": parser.get_format_instructions()},
+        )
+        chain = prompt | self._chat_llm(0.0) | parser
+        try:
+            result = chain.invoke(
                 {
-                    "role": "user",
-                    "parts": [{"text": build_prompt(candidate, page_text)}],
+                    "raw_name": candidate.raw_name,
+                    "raw_address": getattr(candidate, "raw_address", "") or "",
+                    "raw_website": candidate.raw_website or "",
+                    "page_text": page_text,
                 }
-            ],
-            "generationConfig": {
-                "temperature": 0,
-                "maxOutputTokens": 1600,
-                "responseMimeType": "application/json",
-            },
-        }
-        headers = {"Content-Type": "application/json"}
-        payload = post_json(url, headers, body)
-        text = gemini_response_text(payload)
-        return text, parse_json_response(text)
+            )
+        except Exception as exc:
+            raise LLMExtractionError(str(exc)) from exc
+        if not isinstance(result, dict):
+            result = result.model_dump() if hasattr(result, "model_dump") else dict(result)
+        raw_response = json.dumps(result)
+        return raw_response, result
 
     def suggest_urls(self, candidate, homepage_text, links, max_urls):
-        if not self.api_key:
-            raise LLMExtractionError("GEMINI_API_KEY is not set")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.api_key}"
-        body = {
-            "contents": [
+        parser = JsonOutputParser(pydantic_object=UrlSuggestions)
+        link_lines = "\n".join(links[:80])
+        prompt = PromptTemplate(
+            template=URL_SUGGEST_TEMPLATE,
+            input_variables=["max_urls", "raw_name", "raw_website", "homepage_text", "link_lines"],
+            partial_variables={"format_instructions": parser.get_format_instructions()},
+        )
+        chain = prompt | self._chat_llm(0.0) | parser
+        try:
+            result = chain.invoke(
                 {
-                    "role": "user",
-                    "parts": [{"text": build_url_suggestion_prompt(candidate, homepage_text, links, max_urls)}],
+                    "max_urls": max_urls,
+                    "raw_name": candidate.raw_name,
+                    "raw_website": candidate.raw_website or "",
+                    "homepage_text": homepage_text[:5000],
+                    "link_lines": link_lines,
                 }
-            ],
-            "generationConfig": {
-                "temperature": 0,
-                "maxOutputTokens": 800,
-                "responseMimeType": "application/json",
-            },
-        }
-        payload = post_json(url, {"Content-Type": "application/json"}, body)
-        text = gemini_response_text(payload)
-        parsed = parse_json_response(text)
-        return cleaned_suggested_urls(parsed.get("urls", []), links, max_urls)
+            )
+        except Exception as exc:
+            raise LLMExtractionError(str(exc)) from exc
+        if not isinstance(result, dict):
+            result = result.model_dump() if hasattr(result, "model_dump") else dict(result)
+        urls = result.get("urls") or []
+        return cleaned_suggested_urls(urls, links, max_urls)
 
 
 def get_llm_client():
-    provider = os.getenv("MEDITATION_PIPELINE_LLM_PROVIDER", "anthropic").lower()
-    if provider == "gemini":
-        return GeminiClient()
-    if provider == "openai":
-        return OpenAIClient()
-    return AnthropicClient()
-
-
-def build_prompt(candidate, page_text):
-    return f"""
-Extract recurring or upcoming meditation session details from the page text.
-
-Return only valid JSON matching this schema:
-{{
-  "group_name": "string",
-  "style": "string",
-  "sessions": [
-    {{
-      "day": "string",
-      "start_time": "string",
-      "end_time": "string",
-      "session_type": "string",
-      "recurrence": "one_off | weekly | fortnightly | monthly | irregular",
-      "recurrence_note": "string",
-      "recurrence_end_date": "YYYY-MM-DD or empty string",
-      "cost": "string",
-      "beginner_friendly": true,
-      "notes": "string"
-    }}
-  ],
-  "address": "string",
-  "contact": "string",
-  "website": "string",
-  "confidence_score": 0.0
-}}
-
-Use an empty sessions array when no real session is found. Do not invent times.
-If the page lists many identical weekly occurrences, return one session with recurrence set to "weekly".
-
-Candidate:
-Name: {candidate.raw_name}
-Address: {candidate.raw_address}
-Website: {candidate.raw_website or ""}
-
-Page text:
-{page_text}
-""".strip()
-
-
-def build_url_suggestion_prompt(candidate, homepage_text, links, max_urls):
-    link_lines = "\n".join(links[:80])
-    return f"""
-Pick up to {max_urls} internal URLs most likely to contain meditation class times, sessions, calendars, timetables, events, or booking schedules.
-
-Return only JSON:
-{{"urls": ["https://example.com/schedule"]}}
-
-Prefer pages about classes, timetable, schedule, events, meditation, yoga, sessions, booking, calendar, retreats, programs, or weekly practice.
-Do not choose generic privacy, contact, shop, blog, donation, login, cart, or social media pages unless no better schedule-like page exists.
-
-Candidate:
-Name: {candidate.raw_name}
-Website: {candidate.raw_website or ""}
-
-Homepage text:
-{homepage_text[:5000]}
-
-Internal links:
-{link_lines}
-""".strip()
-
-
-def post_json(url, headers, body):
-    request = Request(url, data=json.dumps(body).encode("utf-8"), method="POST", headers=headers)
-    with urlopen(request, timeout=45) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
-def gemini_response_text(payload):
-    candidates = payload.get("candidates") or []
-    if not candidates:
-        raise LLMExtractionError("Gemini response did not include candidates")
-    content = candidates[0].get("content") or {}
-    parts = content.get("parts") or []
-    text = "".join(part.get("text", "") for part in parts)
-    if not text:
-        raise LLMExtractionError("Gemini response did not include text")
-    return text
-
-
-def parse_json_response(text):
-    stripped = text.strip()
-    if stripped.startswith("```"):
-        stripped = stripped.strip("`")
-        stripped = stripped.removeprefix("json").strip()
-    try:
-        return json.loads(stripped)
-    except json.JSONDecodeError:
-        return json.loads(extract_json_object(stripped))
-
-
-def extract_json_object(text):
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        raise LLMExtractionError("No JSON object found in LLM response")
-    return text[start : end + 1]
-
-
-def heuristic_schedule_urls(links, max_urls):
-    keywords = ["class", "classes", "event", "events", "schedule", "timetable", "session", "sessions", "calendar", "booking", "meditation", "yoga", "retreat", "program"]
-    scored_links = []
-    for link in links:
-        score = sum(1 for keyword in keywords if keyword in link.lower())
-        if score:
-            scored_links.append((score, link))
-    scored_links.sort(reverse=True)
-    return [link for _score, link in scored_links[:max_urls]]
+    return OpenAIClient()
 
 
 def cleaned_suggested_urls(urls, allowed_links, max_urls):

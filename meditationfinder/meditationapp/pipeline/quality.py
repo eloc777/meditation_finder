@@ -95,7 +95,6 @@ def duplicate_exists(candidate):
         normalized_address=address,
         status__in=[
             CandidateStatus.KEYWORD_PASSED,
-            CandidateStatus.QUALITY_PASSED,
             CandidateStatus.STRUCTURED_READY,
             CandidateStatus.EXTRACTION_READY,
             CandidateStatus.EXTRACTION_PASSED,
@@ -145,30 +144,23 @@ def keyword_check_is_generous_pass(candidate, text):
 
 
 def pass_structured_quality_check(candidate, target_location):
+    payload = candidate.raw_payload or {}
     address_text = normalize_text(candidate.raw_address)
     target_text = normalize_text(target_location)
-    has_target_location = candidate_in_target_location(candidate, address_text, target_text)
-    has_description = candidate_has_description(candidate)
-    if not has_target_location:
+    if not candidate_in_target_location(candidate, address_text, target_text):
         fail_candidate(candidate, FailureStage.QUALITY_CHECK, FailureReason.INVALID_GEOGRAPHY)
         return False
-    if not candidate_has_website(candidate):
+    if not candidate.raw_website and not payload.get("web_link"):
         fail_candidate(candidate, FailureStage.QUALITY_CHECK, FailureReason.NO_WEBSITE)
         return False
-    if not has_description:
-        fail_candidate(candidate, FailureStage.QUALITY_CHECK, FailureReason.MISSING_DESCRIPTION)
-        return False
-    candidate.status = quality_pass_status(candidate)
+    if candidate_has_structured_session(candidate):
+        candidate.status = CandidateStatus.STRUCTURED_READY
+    else:
+        candidate.status = CandidateStatus.EXTRACTION_READY
     candidate.failed_stage = ""
     candidate.reason_code = ""
     candidate.save(update_fields=["status", "failed_stage", "reason_code", "updated_at"])
     return True
-
-
-def quality_pass_status(candidate):
-    if candidate_has_structured_session(candidate):
-        return CandidateStatus.STRUCTURED_READY
-    return CandidateStatus.EXTRACTION_READY
 
 
 def candidate_has_structured_session(candidate):
@@ -188,24 +180,6 @@ def candidate_in_target_location(candidate, address_text, target_text):
     if candidate.source == "google_places" and target_text in ["brisbane", ""]:
         return "qld" in address_text or "queensland" in address_text or "brisbane" in address_text
     return target_text in address_text
-
-
-def candidate_has_contact(candidate):
-    payload = candidate.raw_payload or {}
-    return bool(candidate.raw_website or candidate.raw_phone or payload.get("web_link") or payload.get("bookings"))
-
-
-def candidate_has_website(candidate):
-    payload = candidate.raw_payload or {}
-    return bool(candidate.raw_website or payload.get("web_link"))
-
-
-def candidate_has_description(candidate):
-    if candidate.raw_description:
-        return True
-    if candidate.source == "google_places":
-        return True
-    return False
 
 
 def session_passes_quality(session_data, threshold):

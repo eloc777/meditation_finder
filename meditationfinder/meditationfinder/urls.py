@@ -8,4 +8,6 @@ from django.urls import include, path
 
 urlpatterns = [
     path("meditationfinder/", include("meditationapp.urls")),
+    # Auth (django-allauth): login, logout, Google OAuth callback, etc.
+    path("meditationfinder/accounts/", include("allauth.urls")),
 ]

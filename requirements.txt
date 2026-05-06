@@ -1,0 +1,8 @@
+# Meditation finder pipeline (OpenAI via LangChain — INFS3202 Applied Class 7 pattern)
+django>=6.0
+django-allauth[socialaccount]
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-openai>=0.2.0
+pydantic>=2.0
+python-dotenv>=1.0

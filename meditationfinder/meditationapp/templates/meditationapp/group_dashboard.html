@@ -16,187 +16,237 @@
 {% block content %}
   <div class="flex-grow-1 container-fluid px-0">
     <div class="row g-0 flex-grow-1" style="min-height: calc(100vh - 56px);">
+
       <aside class="col-lg-3 col-xl-2 border-end bg-white p-3">
         <h2 class="h6 text-uppercase text-muted mb-3">Your groups</h2>
         <div class="list-group list-group-flush">
-          <a href="#" class="list-group-item list-group-item-action active" aria-current="true">
-            Brisbane Mindfulness Circle
-            <span class="d-block small text-white-50">St Lucia</span>
-          </a>
-          <a href="#" class="list-group-item list-group-item-action">
-            West End Zen Sit
-            <span class="d-block small text-muted">West End</span>
-          </a>
+          {% for g in groups %}
+            <a href="{% url 'group_dashboard' group_id=g.id %}"
+               class="list-group-item list-group-item-action {% if group and g.id == group.id %}active{% endif %}">
+              {{ g.name }}
+              <span class="d-block small {% if group and g.id == group.id %}text-white-50{% else %}text-muted{% endif %}">{{ g.suburb }}</span>
+            </a>
+          {% empty %}
+            <p class="small text-muted">No groups yet.</p>
+          {% endfor %}
         </div>
         <p class="small text-muted mt-3 mb-0">Select a group to manage its listing and sessions.</p>
       </aside>
 
       <div class="col-lg-9 col-xl-10 p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-          <h1 class="h3 mb-0">Brisbane Mindfulness Circle</h1>
-          <span class="badge text-bg-secondary">Status: approved</span>
-        </div>
 
-        <section class="card shadow-sm mb-4">
-          <div class="card-header fw-semibold">Group information</div>
-          <div class="card-body">
-            <form action="#" method="post">
-              {% csrf_token %}
-              <div class="row g-3">
-                <div class="col-12">
-                  <label class="form-label" for="g-name">Name</label>
-                  <input type="text" class="form-control" id="g-name" value="Brisbane Mindfulness Circle">
-                </div>
-                <div class="col-12">
-                  <label class="form-label" for="g-desc">Description</label>
-                  <textarea class="form-control" id="g-desc" rows="3">Weekly guided sits and occasional half-day retreats. Beginners welcome.</textarea>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="g-style">Style</label>
-                  <input type="text" class="form-control" id="g-style" value="Mindfulness">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="g-religion">Religion</label>
-                  <input type="text" class="form-control" id="g-religion" value="Secular">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="g-cost">Cost type</label>
-                  <select class="form-select" id="g-cost">
-                    <option value="free">Free</option>
-                    <option value="donation" selected>Donation</option>
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="g-suburb">Suburb</label>
-                  <input type="text" class="form-control" id="g-suburb" value="St Lucia">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="g-postcode">Postcode</label>
-                  <input type="text" class="form-control" id="g-postcode" value="4067">
-                </div>
-                <div class="col-12">
-                  <label class="form-label" for="g-link">Public link</label>
-                  <input type="url" class="form-control" id="g-link" value="https://example.org/mindful-brisbane">
-                </div>
-              </div>
-              <div class="mt-3">
-                <button type="submit" class="btn btn-primary">Save changes</button>
-              </div>
-            </form>
-          </div>
-        </section>
-
-        <section class="card shadow-sm mb-4">
-          <div class="card-header fw-semibold">Sessions</div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Title</th>
-                    <th>Scheduled</th>
-                    <th>Recurrence</th>
-                    <th>Suburb</th>
-                    <th>Postcode</th>
-                    <th>Meeting link</th>
-                    <th class="text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Wednesday sit</td>
-                    <td class="small">Wed 7:00 pm – 8:00 pm</td>
-                    <td><span class="badge text-bg-primary">Weekly</span></td>
-                    <td>St Lucia</td>
-                    <td>4067</td>
-                    <td class="small">—</td>
-                    <td class="text-end text-nowrap">
-                      <button type="button" class="btn btn-sm btn-outline-primary">Edit</button>
-                      <button type="button" class="btn btn-sm btn-outline-danger">Delete</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Sunday open sit</td>
-                    <td class="small">Sun 9:00 am – 10:30 am</td>
-                    <td><span class="badge text-bg-primary">Weekly</span></td>
-                    <td><span class="text-muted">(inherits group)</span></td>
-                    <td><span class="text-muted">—</span></td>
-                    <td class="small"><a href="#">zoom.example/abc</a></td>
-                    <td class="text-end text-nowrap">
-                      <button type="button" class="btn btn-sm btn-outline-primary">Edit</button>
-                      <button type="button" class="btn btn-sm btn-outline-danger">Delete</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-          </div>
-        </section>
+          {% endfor %}
+        {% endif %}
 
-        <section class="card shadow-sm">
-          <div class="card-header fw-semibold">Add new session</div>
-          <div class="card-body">
-            <form action="#" method="post">
-              {% csrf_token %}
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label" for="s-title">Title</label>
-                  <input type="text" class="form-control" id="s-title" placeholder="e.g. Friday beginners sit">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="s-style">Style <span class="text-muted fw-normal">(optional)</span></label>
-                  <input type="text" class="form-control" id="s-style" placeholder="Leave blank to use group default">
-                </div>
-                <div class="col-12">
-                  <label class="form-label" for="s-desc">Description <span class="text-muted fw-normal">(optional)</span></label>
-                  <textarea class="form-control" id="s-desc" rows="2" placeholder="Short note for this session"></textarea>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="s-from">Starts</label>
-                  <input type="datetime-local" class="form-control" id="s-from">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="s-to">Ends</label>
-                  <input type="datetime-local" class="form-control" id="s-to">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="s-suburb">Suburb <span class="text-muted fw-normal">(optional)</span></label>
-                  <input type="text" class="form-control" id="s-suburb" placeholder="Inherit from group if empty">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="s-pc">Postcode <span class="text-muted fw-normal">(optional)</span></label>
-                  <input type="text" class="form-control" id="s-pc" placeholder="">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="s-link">Meeting link <span class="text-muted fw-normal">(optional)</span></label>
-                  <input type="url" class="form-control" id="s-link" placeholder="For online sessions">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="s-recurring">Recurrence</label>
-                  <select class="form-select" id="s-recurring">
-                    <option value="0">One-off</option>
-                    <option value="1">Recurring</option>
-                  </select>
-                </div>
-                <div class="col-md-8">
-                  <label class="form-label" for="s-recurrence-pattern">Recurrence details <span class="text-muted fw-normal">(optional)</span></label>
-                  <input type="text" class="form-control" id="s-recurrence-pattern" placeholder="e.g. Weekly on Wednesdays">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="s-max">Max participants</label>
-                  <input type="number" class="form-control" id="s-max" placeholder="—" min="1">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label" for="s-cost">Cost <span class="text-muted fw-normal">(optional)</span></label>
-                  <input type="text" class="form-control" id="s-cost" placeholder="e.g. 0 or donation">
-                </div>
-              </div>
-              <div class="mt-3">
-                <button type="submit" class="btn btn-success">Add session</button>
-              </div>
-            </form>
+        {% if not group %}
+          <p class="text-muted">No groups found. Ask an admin to create one for you.</p>
+        {% else %}
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <h1 class="h3 mb-0">{{ group.name }}</h1>
+            <span class="badge text-bg-secondary">Status: {{ group.get_status_display }}</span>
           </div>
-        </section>
+
+          <section class="card shadow-sm mb-4">
+            <div class="card-header fw-semibold">Group information</div>
+            <div class="card-body">
+              <form action="{% url 'group_edit' group_id=group.id %}" method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label" for="id_name">Name</label>
+                    {{ group_form.name }}
+                    {% if group_form.name.errors %}<div class="text-danger small mt-1">{{ group_form.name.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="id_description">Description</label>
+                    {{ group_form.description }}
+                    {% if group_form.description.errors %}<div class="text-danger small mt-1">{{ group_form.description.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_style">Style</label>
+                    {{ group_form.style }}
+                    {% if group_form.style.errors %}<div class="text-danger small mt-1">{{ group_form.style.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_religion">Religion <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ group_form.religion }}
+                    {% if group_form.religion.errors %}<div class="text-danger small mt-1">{{ group_form.religion.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_cost_type">Cost type</label>
+                    {{ group_form.cost_type }}
+                    {% if group_form.cost_type.errors %}<div class="text-danger small mt-1">{{ group_form.cost_type.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="id_suburb">Suburb</label>
+                    {{ group_form.suburb }}
+                    {% if group_form.suburb.errors %}<div class="text-danger small mt-1">{{ group_form.suburb.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="id_postcode">Postcode</label>
+                    {{ group_form.postcode }}
+                    {% if group_form.postcode.errors %}<div class="text-danger small mt-1">{{ group_form.postcode.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="id_link">Public link <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ group_form.link }}
+                    {% if group_form.link.errors %}<div class="text-danger small mt-1">{{ group_form.link.errors }}</div>{% endif %}
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section class="card shadow-sm mb-4">
+            <div class="card-header fw-semibold">Sessions</div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Title</th>
+                      <th>Starts</th>
+                      <th>Ends</th>
+                      <th>Recurrence</th>
+                      <th>Location</th>
+                      <th>Meeting link</th>
+                      <th class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for session in sessions %}
+                      <tr>
+                        <td>{{ session.title }}</td>
+                        <td class="small">{{ session.scheduled_from|date:"D j M, g:i a" }}</td>
+                        <td class="small">{{ session.scheduled_to|date:"g:i a" }}</td>
+                        <td>
+                          {% if session.is_recurring %}
+                            <span class="badge text-bg-primary">{{ session.get_recurrence_display }}</span>
+                          {% else %}
+                            <span class="badge text-bg-secondary">One-off</span>
+                          {% endif %}
+                        </td>
+                        <td class="small">{{ session.display_location }}</td>
+                        <td class="small">
+                          {% if session.meeting_link %}
+                            <a href="{{ session.meeting_link }}" target="_blank" rel="noopener">Link</a>
+                          {% else %}
+                            <span class="text-muted">—</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap">
+                          <a href="{% url 'session_edit' session_id=session.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                          <form action="{% url 'session_delete' session_id=session.id %}" method="post" class="d-inline"
+                                onsubmit="return confirm('Delete this session?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                          </form>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="7" class="text-muted text-center py-3">No sessions yet. Add one below.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section class="card shadow-sm">
+            <div class="card-header fw-semibold">Add new session</div>
+            <div class="card-body">
+              <form action="{% url 'session_create' group_id=group.id %}" method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label" for="id_title">Title</label>
+                    {{ session_form.title }}
+                    {% if session_form.title.errors %}<div class="text-danger small mt-1">{{ session_form.title.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="id_style">Style <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.style }}
+                    {% if session_form.style.errors %}<div class="text-danger small mt-1">{{ session_form.style.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="id_description">Description <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.description }}
+                    {% if session_form.description.errors %}<div class="text-danger small mt-1">{{ session_form.description.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="id_scheduled_from">Starts</label>
+                    {{ session_form.scheduled_from }}
+                    {% if session_form.scheduled_from.errors %}<div class="text-danger small mt-1">{{ session_form.scheduled_from.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="id_scheduled_to">Ends</label>
+                    {{ session_form.scheduled_to }}
+                    {% if session_form.scheduled_to.errors %}<div class="text-danger small mt-1">{{ session_form.scheduled_to.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_suburb">Suburb <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.suburb }}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_postcode">Postcode <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.postcode }}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_meeting_link">Meeting link <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.meeting_link }}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_recurrence">Recurrence</label>
+                    {{ session_form.recurrence }}
+                    {% if session_form.recurrence.errors %}<div class="text-danger small mt-1">{{ session_form.recurrence.errors }}</div>{% endif %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_recurrence_pattern">Recurrence details <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.recurrence_pattern }}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_recurrence_end_date">Recurrence end date <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.recurrence_end_date }}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_max_participants">Max participants <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.max_participants }}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="id_cost">Cost <span class="text-muted fw-normal">(optional)</span></label>
+                    {{ session_form.cost }}
+                  </div>
+                  <div class="col-md-4 d-flex align-items-end gap-3 pb-1">
+                    <div class="form-check">
+                      {{ session_form.is_recurring }}
+                      <label class="form-check-label" for="id_is_recurring">Recurring</label>
+                    </div>
+                    <div class="form-check">
+                      {{ session_form.beginner_friendly }}
+                      <label class="form-check-label" for="id_beginner_friendly">Beginner friendly</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <button type="submit" class="btn btn-success">Add session</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+        {% endif %}
       </div>
     </div>
   </div>

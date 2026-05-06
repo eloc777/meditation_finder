@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from meditationapp.models import CandidateStatus, CostType, MeditationGroup, RecurrenceType, Session, Source, Style
-from meditationapp.pipeline.recurrence import event_end_datetime, event_start_datetime
+from meditationapp.pipeline.recurrence import collapse_session_data, event_end_datetime, event_start_datetime
 
 
 DAY_INDEX = {
@@ -124,7 +124,7 @@ def structured_group_name(candidate):
 
 def create_sessions(group, candidate, parsed):
     sessions = []
-    for session_data in collapsed_session_data(candidate, parsed.get("sessions") or []):
+    for session_data in collapse_session_data(candidate, parsed.get("sessions") or []):
         scheduled_from = next_datetime_for_day(session_data.get("day"), session_data.get("start_time"))
         if not scheduled_from:
             continue
@@ -153,52 +153,12 @@ def create_sessions(group, candidate, parsed):
     return sessions
 
 
-def collapsed_session_data(candidate, sessions):
-    grouped_sessions = {}
-    for session_data in sessions:
-        key = session_signature(candidate, session_data)
-        grouped_sessions.setdefault(key, []).append(session_data)
-    collapsed_sessions = []
-    for group in grouped_sessions.values():
-        if len(group) >= 3:
-            collapsed_sessions.append(recurring_session_data(group))
-        elif len(group) == 1:
-            collapsed_sessions.append(group[0])
-        else:
-            collapsed_sessions.append(ambiguous_session_data(group))
-    return collapsed_sessions
-
-
 def normalize_recurrence(value):
     normalized = (value or RecurrenceType.ONE_OFF).strip().lower()
     valid_values = [choice.value for choice in RecurrenceType]
     if normalized in valid_values:
         return normalized
     return RecurrenceType.ONE_OFF
-
-
-def session_signature(candidate, session_data):
-    return (
-        (session_data.get("session_type") or "").strip().lower(),
-        (session_data.get("day") or "").strip().lower(),
-        (session_data.get("start_time") or "").strip().lower(),
-        (candidate.raw_address or "").strip().lower(),
-    )
-
-
-def recurring_session_data(group):
-    session_data = dict(group[0])
-    session_data["recurrence"] = RecurrenceType.WEEKLY
-    session_data["recurrence_note"] = f"Every {session_data.get('day')}"
-    session_data["notes"] = f"{session_data.get('notes', '')} Collapsed from {len(group)} matching occurrences.".strip()
-    return session_data
-
-
-def ambiguous_session_data(group):
-    session_data = dict(group[0])
-    session_data["recurrence"] = RecurrenceType.IRREGULAR
-    session_data["recurrence_note"] = f"{len(group)} similar occurrences found; staff should confirm recurrence."
-    return session_data
 
 
 def recurrence_pattern(session_data, recurrence):

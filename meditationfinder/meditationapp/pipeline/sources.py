@@ -64,7 +64,7 @@ def request_json(url, method="GET", headers=None, body=None):
 def google_places_candidates(location, query):
     api_key = os.getenv("GOOGLE_PLACES_API_KEY", "")
     if not api_key:
-        return []
+        raise RuntimeError("GOOGLE_PLACES_API_KEY is not set. Export it before running the Google Places seed command.")
     candidates = []
     seen_place_ids = set()
     for text_query in google_places_queries(location, query):
@@ -77,7 +77,7 @@ def google_places_candidates(location, query):
 
 def google_places_queries(location, query):
     return [
-        f"{query} in {location}",
+        f"{query} in {location}", # TODO maybe we need to search suburbs not just brisbane
         f"meditation groups in {location}",
         f"mindfulness groups in {location}",
         f"zen meditation in {location}",

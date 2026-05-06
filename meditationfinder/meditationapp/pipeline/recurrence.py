@@ -21,6 +21,23 @@ def collapse_recurring_candidates(candidates):
     return [candidate for candidate in candidates if candidate.id not in collapsed_candidate_ids]
 
 
+def collapse_session_data(candidate, sessions):
+    grouped_sessions = {}
+    for session_data in sessions:
+        key = session_signature(candidate, session_data)
+        grouped_sessions.setdefault(key, []).append(session_data)
+
+    collapsed_sessions = []
+    for group in grouped_sessions.values():
+        if len(group) >= RECURRING_THRESHOLD:
+            collapsed_sessions.append(recurring_session_data(group))
+        elif len(group) == 1:
+            collapsed_sessions.append(group[0])
+        else:
+            collapsed_sessions.append(ambiguous_session_data(group))
+    return collapsed_sessions
+
+
 def group_candidates_by_event_signature(candidates):
     groups = {}
     for candidate in candidates:
@@ -80,6 +97,30 @@ def flag_ambiguous_candidates(group):
 def occurrence_date_values(group):
     datetimes = sorted(event_start_datetime(candidate.raw_payload) for candidate in group)
     return [value.date().isoformat() for value in datetimes if value]
+
+
+def session_signature(candidate, session_data):
+    return (
+        normalize_text(session_data.get("session_type")),
+        normalize_text(session_data.get("day")),
+        normalize_text(session_data.get("start_time")),
+        normalize_text(candidate.raw_address),
+    )
+
+
+def recurring_session_data(group):
+    session_data = dict(group[0])
+    session_data["recurrence"] = RecurrenceType.WEEKLY
+    session_data["recurrence_note"] = f"Every {session_data.get('day')}"
+    session_data["notes"] = f"{session_data.get('notes', '')} Collapsed from {len(group)} matching occurrences.".strip()
+    return session_data
+
+
+def ambiguous_session_data(group):
+    session_data = dict(group[0])
+    session_data["recurrence"] = RecurrenceType.IRREGULAR
+    session_data["recurrence_note"] = f"{len(group)} similar occurrences found; staff should confirm recurrence."
+    return session_data
 
 
 def event_start_datetime(payload):

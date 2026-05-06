@@ -58,7 +58,6 @@ class PipelineRunStatus(models.TextChoices):
 class CandidateStatus(models.TextChoices):
     NEW = "new", "New"
     KEYWORD_PASSED = "keyword_passed", "Keyword passed"
-    QUALITY_PASSED = "quality_passed", "Quality passed"
     STRUCTURED_READY = "structured_ready", "Structured ready"
     EXTRACTION_READY = "extraction_ready", "Needs enrichment"
     EXTRACTION_PASSED = "extraction_passed", "Extraction passed"

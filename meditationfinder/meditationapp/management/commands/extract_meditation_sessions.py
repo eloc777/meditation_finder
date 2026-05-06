@@ -8,7 +8,7 @@ from meditationapp.pipeline.quality import session_passes_quality
 
 
 class Command(BaseCommand):
-    help = "Fetch candidate websites and use a cheap hosted LLM to extract meditation session data."
+    help = "Fetch candidate websites and use OpenAI (LangChain) to extract meditation session data."
 
     def add_arguments(self, parser):
         parser.add_argument("--limit", type=int, default=25)

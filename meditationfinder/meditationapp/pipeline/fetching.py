@@ -5,7 +5,6 @@ from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
 
-COMMON_SESSION_PATHS = ["", "/classes", "/events", "/schedule", "/timetable", "/sessions"]
 MAX_COMPACT_TEXT_CHARS = 12000
 
 
@@ -46,12 +45,6 @@ class LinkParser(HTMLParser):
         href = attrs_by_name.get("href")
         if href:
             self.links.append(urljoin(self.base_url, href))
-
-
-def build_candidate_urls(base_url):
-    if not base_url:
-        return []
-    return [urljoin(base_url, path) for path in COMMON_SESSION_PATHS]
 
 
 def fetch_html(url):

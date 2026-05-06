@@ -137,6 +137,27 @@
               </div>
             {% endfor %}
           </div>
+          {% if sessions.has_other_pages %}
+            <nav class="mt-4" aria-label="Session pagination">
+              <ul class="pagination justify-content-center flex-wrap mb-0">
+                <li class="page-item {% if not sessions.has_previous %}disabled{% endif %}">
+                  <a class="page-link" href="{% if sessions.has_previous %}?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ sessions.previous_page_number }}{% else %}#{% endif %}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+                {% for page_number in sessions.paginator.page_range %}
+                  <li class="page-item {% if sessions.number == page_number %}active{% endif %}">
+                    <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_number }}">{{ page_number }}</a>
+                  </li>
+                {% endfor %}
+                <li class="page-item {% if not sessions.has_next %}disabled{% endif %}">
+                  <a class="page-link" href="{% if sessions.has_next %}?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ sessions.next_page_number }}{% else %}#{% endif %}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          {% endif %}
         {% else %}
           <div class="alert alert-info" role="alert">
             No sessions match those filters yet. Try clearing a filter or checking nearby suburbs.
