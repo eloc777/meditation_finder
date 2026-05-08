@@ -52,6 +52,13 @@ def get_managed_groups(user):
     ).order_by("name")
 
 
+# request.method (GET, POST, etc.)
+# request.GET (query params like ?q=zen&page=2)
+# request.POST (submitted form data)
+# request.user (current authenticated user)
+# request.path (URL path)
+# headers, cookies, session, files, etc.
+
 def index(request):
     selected_days = request.GET.getlist("day")
     selected_time = request.GET.get("time_of_day", "")
@@ -60,10 +67,10 @@ def index(request):
     selected_cost = request.GET.get("cost", "")
     selected_q = request.GET.get("q", "")
 
-    sessions = Session.objects.select_related("group").filter(group__status=GroupStatus.APPROVED)
+    sessions = Session.objects.select_related("group").filter(group__status=GroupStatus.APPROVED) # start building the query
 
     if selected_q:
-        sessions = sessions.filter(
+        sessions = sessions.filter( # we use Q() to build compound boolean expressions
             Q(title__icontains=selected_q)
             | Q(description__icontains=selected_q)
             | Q(group__name__icontains=selected_q)
@@ -141,17 +148,13 @@ def index(request):
     return render(request, "meditationapp/finder.html", context)
 
 
-def sign_in(request):
-    return render(request, "meditationapp/sign_in.html")
-
-
 @login_required(login_url="account_login")
 def group_dashboard(request, group_id=None):
     groups = get_managed_groups(request.user)
     if group_id is None:
         first = groups.first()
         if first:
-            return redirect("group_dashboard", group_id=first.id)
+            return redirect("group_dashboard", group_id=first.id) # gives a canonical url /group-dashboard/<id>/
         return render(request, "meditationapp/group_dashboard.html", {"groups": groups})
     if not user_manages_group(request.user, group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
@@ -169,12 +172,11 @@ def group_dashboard(request, group_id=None):
 
 
 @login_required(login_url="account_login")
+@require_POST
 def group_edit(request, group_id):
     if not user_manages_group(request.user, group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
     group = get_object_or_404(MeditationGroup, id=group_id)
-    if request.method != "POST":
-        return redirect("group_dashboard", group_id=group_id)
     form = MeditationGroupForm(request.POST, instance=group)
     if form.is_valid():
         form.save()
@@ -192,17 +194,16 @@ def group_edit(request, group_id):
 
 
 @login_required(login_url="account_login")
+@require_POST
 def session_create(request, group_id):
     if not user_manages_group(request.user, group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
     group = get_object_or_404(MeditationGroup, id=group_id)
-    if request.method != "POST":
-        return redirect("group_dashboard", group_id=group_id)
-    form = SessionEditForm(request.POST)
-    if form.is_valid():
+    form = SessionEditForm(request.POST) # read the submitted data
+    if form.is_valid(): # fills in form.errors so the html contains this info
         session = form.save(commit=False)
         session.group = group
-        session.save()
+        session.save() #insert/update in db
         messages.success(request, "Session added.")
         return redirect("group_dashboard", group_id=group_id)
     groups = get_managed_groups(request.user)
@@ -235,7 +236,7 @@ def session_edit(request, session_id):
         "group": session.group,
     })
 
-
+# not the redirect instead of render. We just delter the session and then redirect the browser
 @login_required(login_url="account_login")
 @require_POST
 def session_delete(request, session_id):

@@ -23,7 +23,7 @@ class MeditationGroupForm(forms.ModelForm):
             else:
                 field.widget.attrs.update({"class": "form-control"})
 
-
+# TODO handle form validation ui
 class SessionEditForm(forms.ModelForm):
     class Meta:
         model = Session
