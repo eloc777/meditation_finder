@@ -2,17 +2,11 @@
 
 {% block title %}Staff review — Mindful Meetups{% endblock %}
 
-{% block header %}
-  <header>
-    <nav class="navbar navbar-dark bg-primary">
-      <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1 fs-5">Mindful Meetups — Staff</span>
-        <div class="d-flex gap-2">
-          <a class="btn btn-sm btn-outline-light" href="{% url 'index' %}">View public site</a>
-        </div>
-      </div>
-    </nav>
-  </header>
+{% block navbar_inner %}
+  <span class="navbar-brand mb-0 h1 fs-5">Mindful Meetups - Staff</span>
+  <div class="d-flex gap-2">
+    <a class="btn btn-sm btn-outline-light" href="{% url 'index' %}">View public site</a>
+  </div>
 {% endblock %}
 
 {% block content %}

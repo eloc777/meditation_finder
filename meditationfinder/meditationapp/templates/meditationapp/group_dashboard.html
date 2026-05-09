@@ -2,15 +2,9 @@
 
 {% block title %}Group dashboard — Mindful Meetups{% endblock %}
 
-{% block header %}
-  <header>
-    <nav class="navbar navbar-dark bg-dark">
-      <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1 fs-5">Group manager dashboard</span>
-        <a class="btn btn-outline-light btn-sm" href="{% url 'index' %}"><i class="bi bi-house-door me-1"></i>Return to main site</a>
-      </div>
-    </nav>
-  </header>
+{% block navbar_inner %}
+  <span class="navbar-brand mb-0 h1 fs-5">Group manager dashboard</span>
+  <a class="btn btn-outline-light btn-sm" href="{% url 'index' %}"><i class="bi bi-house-door me-1"></i>Return to main site</a>
 {% endblock %}
 
 {% block content %}

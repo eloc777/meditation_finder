@@ -7,7 +7,18 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import MeditationGroupForm, SessionEditForm
-from .models import CandidateRecord, CandidateStatus, CostType, ExtractionAttempt, GroupStatus, MeditationGroup, Session, Style, UserRole
+from .models import (
+    CandidateRecord,
+    CandidateStatus,
+    CostType,
+    ExtractionAttempt,
+    GroupStatus,
+    MeditationGroup,
+    SavedGroup,
+    Session,
+    Style,
+    UserRole,
+)
 
 
 DAY_OPTIONS = [
@@ -149,6 +160,18 @@ def index(request):
 
 
 @login_required(login_url="account_login")
+def saved_groups(request):
+    saves_qs = SavedGroup.objects.filter(user=request.user).select_related("group").order_by("-saved_at")
+    paginator = Paginator(saves_qs, 25)
+    paginated_saves = paginator.get_page(request.GET.get("page"))
+    return render(
+        request,
+        "meditationapp/saved_groups.html",
+        {"saved_groups": paginated_saves},
+    )
+
+
+@login_required(login_url="account_login")
 def group_dashboard(request, group_id=None):
     groups = get_managed_groups(request.user)
     if group_id is None:
@@ -199,11 +222,11 @@ def session_create(request, group_id):
     if not user_manages_group(request.user, group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
     group = get_object_or_404(MeditationGroup, id=group_id)
-    form = SessionEditForm(request.POST) # read the submitted data
-    if form.is_valid(): # fills in form.errors so the html contains this info
+    form = SessionEditForm(request.POST)
+    if form.is_valid():
         session = form.save(commit=False)
         session.group = group
-        session.save() #insert/update in db
+        session.save()
         messages.success(request, "Session added.")
         return redirect("group_dashboard", group_id=group_id)
     groups = get_managed_groups(request.user)
@@ -222,6 +245,7 @@ def session_edit(request, session_id):
     session = get_object_or_404(Session, id=session_id)
     if not user_manages_group(request.user, session.group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
+    # post if we are trying to submit the edit, get if we are opening a session form (different from group form because it is rendered already)
     if request.method == "POST":
         form = SessionEditForm(request.POST, instance=session)
         if form.is_valid():
@@ -236,7 +260,7 @@ def session_edit(request, session_id):
         "group": session.group,
     })
 
-# not the redirect instead of render. We just delter the session and then redirect the browser
+
 @login_required(login_url="account_login")
 @require_POST
 def session_delete(request, session_id):
@@ -288,4 +312,32 @@ def reject_group(request, group_id):
 def group_profile(request, group_id):
     group = get_object_or_404(MeditationGroup, id=group_id, status=GroupStatus.APPROVED)
     sessions = Session.objects.filter(group=group).order_by("scheduled_from", "title")
-    return render(request, "meditationapp/group_profile.html", {"group": group, "sessions": sessions})
+    is_saved = False
+    if request.user.is_authenticated:
+        is_saved = SavedGroup.objects.filter(user=request.user, group=group).exists()
+    return render(
+        request,
+        "meditationapp/group_profile.html",
+        {"group": group, "sessions": sessions, "is_saved": is_saved},
+    )
+
+
+@login_required(login_url="account_login")
+@require_POST
+def group_save(request, group_id):
+    group = get_object_or_404(MeditationGroup, id=group_id, status=GroupStatus.APPROVED)
+    _, created = SavedGroup.objects.get_or_create(user=request.user, group=group)
+    if created:
+        messages.success(request, "Group saved to your list. View it anytime under Saved groups.")
+    else:
+        messages.info(request, "This group is already on your saved list.")
+    return redirect("group_profile", group_id=group_id)
+
+
+@login_required(login_url="account_login")
+@require_POST
+def group_unsave(request, group_id):
+    group = get_object_or_404(MeditationGroup, id=group_id, status=GroupStatus.APPROVED)
+    SavedGroup.objects.filter(user=request.user, group=group).delete()
+    messages.success(request, "Removed from your saved groups.")
+    return redirect("group_profile", group_id=group_id)

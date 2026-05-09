@@ -1,0 +1,76 @@
+{% extends "meditationapp/base.html" %}
+
+{% block title %}Saved groups — Mindful Meetups{% endblock %}
+
+{% block content %}
+  <main class="flex-grow-1">
+    <div class="container py-4">
+      <h1 class="h2 mb-2">Saved groups</h1>
+      <p class="text-muted mb-4">Groups you bookmarked from their profile page. You can open them again anytime from here.</p>
+
+      {% if saved_groups.paginator.count %}
+        <section class="card shadow-sm">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Group</th>
+                  <th scope="col">Location</th>
+                  <th scope="col">Saved</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for save in saved_groups %}
+                  <tr>
+                    <td>
+                      <span class="fw-medium">{{ save.group.name }}</span>
+                      {% if save.group.status != 'approved' %}
+                        <span class="badge text-bg-secondary ms-1">No longer listed</span>
+                      {% endif %}
+                    </td>
+                    <td class="small text-muted">{{ save.group.suburb }}, {{ save.group.postcode }}</td>
+                    <td class="small">{{ save.saved_at|date:"j M Y, g:i A" }}</td>
+                    <td class="text-end">
+                      {% if save.group.status == 'approved' %}
+                        <a class="btn btn-sm btn-outline-primary" href="{% url 'group_profile' save.group.id %}">View profile</a>
+                      {% else %}
+                        <span class="small text-muted">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {% if saved_groups.has_other_pages %}
+          <nav class="mt-4" aria-label="Saved groups pagination">
+            <ul class="pagination justify-content-center flex-wrap mb-0">
+              <li class="page-item {% if not saved_groups.has_previous %}disabled{% endif %}">
+                <a class="page-link" href="{% if saved_groups.has_previous %}?page={{ saved_groups.previous_page_number }}{% else %}#{% endif %}" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+              {% for page_number in saved_groups.paginator.page_range %}
+                <li class="page-item {% if saved_groups.number == page_number %}active{% endif %}">
+                  <a class="page-link" href="?page={{ page_number }}">{{ page_number }}</a>
+                </li>
+              {% endfor %}
+              <li class="page-item {% if not saved_groups.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{% if saved_groups.has_next %}?page={{ saved_groups.next_page_number }}{% else %}#{% endif %}" aria-label="Next">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        {% endif %}
+      {% else %}
+        <div class="alert alert-info mb-0" role="alert">
+          You have not saved any groups yet. Browse <a href="{% url 'index' %}" class="alert-link">Find sessions</a>, open a group profile, and use <strong>Save group</strong>.
+        </div>
+      {% endif %}
+    </div>
+  </main>
+{% endblock %}

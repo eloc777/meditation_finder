@@ -2,17 +2,11 @@
 
 {% block title %}Edit session — Mindful Meetups{% endblock %}
 
-{% block header %}
-  <header>
-    <nav class="navbar navbar-dark bg-dark">
-      <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1 fs-5">Group manager dashboard</span>
-        <a class="btn btn-outline-light btn-sm" href="{% url 'group_dashboard' group_id=group.id %}">
-          <i class="bi bi-arrow-left me-1"></i>Back to dashboard
-        </a>
-      </div>
-    </nav>
-  </header>
+{% block navbar_inner %}
+  <span class="navbar-brand mb-0 h1 fs-5">Group manager dashboard</span>
+  <a class="btn btn-outline-light btn-sm" href="{% url 'group_dashboard' group_id=group.id %}">
+    <i class="bi bi-arrow-left me-1"></i>Back to dashboard
+  </a>
 {% endblock %}
 
 {% block content %}
