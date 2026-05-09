@@ -1,6 +1,26 @@
 from django.contrib import admin
 
-from .models import CandidateRecord, ExtractionAttempt, MeditationGroup, PipelineRun, Session
+from .models import CandidateRecord, ExtractionAttempt, MeditationGroup, PipelineRun, Session, Subscription
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ["user", "archived_at", "is_archived", "notes_short", "created_at"]
+    list_filter = ["is_archived"]
+    search_fields = ["user__username", "user__email", "notes"]
+    list_per_page = 25
+    readonly_fields = ["created_at", "is_archived"]
+
+    def notes_short(self, obj):
+        text = (obj.notes or "").strip()
+        if len(text) > 60:
+            return text[:57] + "..."
+        return text
+
+    notes_short.short_description = "Notes"
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(MeditationGroup)

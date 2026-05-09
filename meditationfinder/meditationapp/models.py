@@ -260,6 +260,25 @@ class SavedGroup(models.Model):
         return f"{self.user.username} saved {self.group.name}"
 
 
+class Subscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="subscriptions")
+    archived_at = models.DateTimeField(blank=True, null=True)
+    notes = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_archived = models.BooleanField(default=False, editable=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        self.is_archived = self.archived_at is not None
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        state = "archived" if self.is_archived else "active"
+        return f"{self.user.username} ({state})"
+
+
 class Role(models.Model):
     name = models.CharField(max_length=64, unique=True)
 
