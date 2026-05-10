@@ -128,7 +128,7 @@
                       Hosted by <a href="{% url 'group_profile' session.group.id %}">{{ session.group.name }}</a>
                     </p>
                     <ul class="list-unstyled small text-muted mb-3 flex-grow-1">
-                      <li><i class="bi bi-clock me-1"></i><strong>When:</strong> {{ session.next_occurrence|date:"D g:i A" }}-{{ session.scheduled_to|date:"g:i A" }}</li>
+                      <li><i class="bi bi-clock me-1"></i><strong>When:</strong> {{ session.next_occurrence|date:"D g:i A" }}{% if session.scheduled_to %}-{{ session.scheduled_to|date:"g:i A" }}{% endif %}</li>
                       <li><i class="bi bi-geo-alt me-1"></i><strong>Location:</strong> {{ session.display_location }}</li>
                       <li><i class="bi bi-flower1 me-1"></i><strong>Style:</strong> {{ session.display_style }}</li>
                       <li><i class="bi bi-building me-1"></i><strong>Tradition:</strong> {{ session.group.religion|default:"Not specified" }}</li>
@@ -184,7 +184,7 @@
             {% endif %}
             <dl class="row small mb-0">
               <dt class="col-sm-3">Group</dt><dd class="col-sm-9"><a href="{% url 'group_profile' session.group.id %}">{{ session.group.name }}</a></dd>
-              <dt class="col-sm-3">When</dt><dd class="col-sm-9">{{ session.next_occurrence|date:"l, j M Y, g:i A" }}-{{ session.scheduled_to|date:"g:i A" }}</dd>
+              <dt class="col-sm-3">When</dt><dd class="col-sm-9">{{ session.next_occurrence|date:"l, j M Y, g:i A" }}{% if session.scheduled_to %}-{{ session.scheduled_to|date:"g:i A" }}{% endif %}</dd>
               <dt class="col-sm-3">Recurrence</dt><dd class="col-sm-9"><span class="badge {{ session.recurrence_badge_class }}">{{ session.recurrence_label }}</span>{% if session.recurrence_pattern %} {{ session.recurrence_pattern }}{% endif %}</dd>
               <dt class="col-sm-3">Location</dt><dd class="col-sm-9">{{ session.display_location }}</dd>
               <dt class="col-sm-3">Style</dt><dd class="col-sm-9">{{ session.display_style }}</dd>

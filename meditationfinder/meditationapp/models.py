@@ -126,7 +126,7 @@ class Session(models.Model):
     recurrence_end_date = models.DateField(blank=True, null=True)
     beginner_friendly = models.BooleanField(default=False)
     scheduled_from = models.DateTimeField()
-    scheduled_to = models.DateTimeField()
+    scheduled_to = models.DateTimeField(blank=True, null=True)
     suburb = models.CharField(max_length=128, blank=True, null=True)
     postcode = models.CharField(max_length=16, blank=True, null=True)
     meeting_link = models.URLField(blank=True, null=True)

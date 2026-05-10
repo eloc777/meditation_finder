@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -18,6 +20,14 @@ from .models import (
     Style,
     UserRole,
 )
+from .services.session_import import (
+    SessionImportError,
+    compute_display_end_time,
+    import_sessions_from_url,
+    prepare_session_for_save,
+)
+
+logger = logging.getLogger(__name__)
 
 
 DAY_OPTIONS = [
@@ -72,6 +82,13 @@ def paginate_queryset(request, queryset, per_page):
 def paginate_group_dashboard_sessions(request, group):
     sessions_qs = Session.objects.filter(group=group).order_by("scheduled_from", "title")
     return paginate_queryset(request, sessions_qs, SESSION_LIST_PAGE_SIZE)
+
+
+def group_dashboard_import_context(request):
+    return {
+        "imported_sessions": request.session.get("imported_sessions"),
+        "scan_url": request.session.get("scan_url", ""),
+    }
 
 
 # request.method (GET, POST, etc.)
@@ -233,6 +250,7 @@ def group_dashboard(request, group_id=None):
         "pagination_query": pagination_query,
         "group_form": group_form,
         "session_form": session_form,
+        **group_dashboard_import_context(request),
     })
 
 
@@ -256,6 +274,7 @@ def group_edit(request, group_id):
         "pagination_query": pagination_query,
         "group_form": form,
         "session_form": SessionEditForm(prefix="session"),
+        **group_dashboard_import_context(request),
     })
 
 
@@ -293,6 +312,7 @@ def session_create(request, group_id):
         "pagination_query": pagination_query,
         "group_form": MeditationGroupForm(instance=group, prefix="group"),
         "session_form": form,
+        **group_dashboard_import_context(request),
     })
 
 
@@ -326,6 +346,66 @@ def session_delete(request, session_id):
     group_id = session.group_id
     session.delete()
     messages.success(request, "Session deleted.")
+    return redirect("group_dashboard", group_id=group_id)
+
+
+@login_required(login_url="account_login")
+@require_POST
+def session_scan(request, group_id):
+    if not user_manages_group(request.user, group_id):
+        return HttpResponseForbidden("You do not have permission to manage this group.")
+    group = get_object_or_404(MeditationGroup, id=group_id)
+    url = request.POST.get("scan_url", "").strip()
+    if not url:
+        messages.warning(request, "Please enter a URL to scan.")
+        return redirect("group_dashboard", group_id=group_id)
+    try:
+        found_sessions = import_sessions_from_url(url, group.name)
+        for s in found_sessions:
+            s["display_end_time"] = compute_display_end_time(s)
+        request.session["imported_sessions"] = found_sessions
+        request.session["scan_url"] = url
+        messages.success(request, f"Found {len(found_sessions)} session(s). Review and save the ones you want.")
+    except SessionImportError as exc:
+        messages.warning(request, str(exc))
+    except Exception as exc:
+        logger.exception("Unexpected error during session scan for group %s", group_id)
+        messages.error(request, "Something went wrong while scanning. Please try again.")
+    return redirect("group_dashboard", group_id=group_id)
+
+
+@login_required(login_url="account_login")
+@require_POST
+def session_bulk_create(request, group_id):
+    if not user_manages_group(request.user, group_id):
+        return HttpResponseForbidden("You do not have permission to manage this group.")
+    group = get_object_or_404(MeditationGroup, id=group_id)
+    imported_sessions = request.session.get("imported_sessions")
+    if not imported_sessions:
+        messages.warning(request, "No imported sessions to save. Try scanning a URL first.")
+        return redirect("group_dashboard", group_id=group_id)
+    selected_indices = request.POST.getlist("selected_sessions")
+    if not selected_indices:
+        messages.warning(request, "No sessions selected. Please tick at least one session to save.")
+        return redirect("group_dashboard", group_id=group_id)
+    saved_count = 0
+    for index_str in selected_indices:
+        try:
+            index = int(index_str)
+        except ValueError:
+            continue
+        if index < 0 or index >= len(imported_sessions):
+            continue
+        session_kwargs = prepare_session_for_save(imported_sessions[index], group)
+        if session_kwargs:
+            Session.objects.create(**session_kwargs)
+            saved_count += 1
+    if saved_count:
+        messages.success(request, f"Saved {saved_count} session(s).")
+        request.session.pop("imported_sessions", None)
+        request.session.pop("scan_url", None)
+    else:
+        messages.warning(request, "Could not save any sessions. The day/time data may not have been parseable.")
     return redirect("group_dashboard", group_id=group_id)
 
 

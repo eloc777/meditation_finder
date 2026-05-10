@@ -93,7 +93,7 @@
                               <span class="d-block small text-muted">{{ session.description }}</span>
                             {% endif %}
                           </td>
-                          <td class="small">{{ session.scheduled_from|date:"D g:i A" }}-{{ session.scheduled_to|date:"g:i A" }}</td>
+                          <td class="small">{{ session.scheduled_from|date:"D g:i A" }}{% if session.scheduled_to %}-{{ session.scheduled_to|date:"g:i A" }}{% endif %}</td>
                           <td><span class="badge {{ session.recurrence_badge_class }}">{{ session.recurrence_label }}</span></td>
                           <td>{{ session.display_location }}</td>
                         </tr>

@@ -14,6 +14,8 @@ urlpatterns = [
     path("group-dashboard/<int:group_id>/edit/", views.group_edit, name="group_edit"),
     path("group-dashboard/<int:group_id>/delete/", views.group_delete, name="group_delete"),
     path("group-dashboard/<int:group_id>/sessions/add/", views.session_create, name="session_create"),
+    path("group-dashboard/<int:group_id>/sessions/scan/", views.session_scan, name="session_scan"),
+    path("group-dashboard/<int:group_id>/sessions/import/", views.session_bulk_create, name="session_bulk_create"),
     path("sessions/<int:session_id>/edit/", views.session_edit, name="session_edit"),
     path("sessions/<int:session_id>/delete/", views.session_delete, name="session_delete"),
 ]
