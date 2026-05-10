@@ -3,7 +3,7 @@
 {% block title %}{{ group.name }} — Mindful Meetups{% endblock %}
 
 {% block content %}
-  <main class="flex-grow-1">
+  <main id="main-content" class="flex-grow-1">
     <div class="container py-4">
       <p class="mb-3">
         <a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back to sessions</a>
@@ -29,7 +29,6 @@
               {% endif %}
             </div>
             <div class="d-flex flex-column align-items-end gap-2">
-              <span class="badge text-bg-success">{{ group.get_status_display }}</span>
               {% if not request.user.is_authenticated %}
                 <p class="small text-muted mb-0 text-end">
                   <a href="{% url 'account_login' %}?next={{ request.path|urlencode }}">Sign in to save this group</a>
@@ -79,10 +78,10 @@
                   <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                       <tr>
-                        <th>Session</th>
-                        <th>When</th>
-                        <th>Recurrence</th>
-                        <th>Location</th>
+                        <th scope="col">Session</th>
+                        <th scope="col">When</th>
+                        <th scope="col">Recurrence</th>
+                        <th scope="col">Location</th>
                       </tr>
                     </thead>
                     <tbody>

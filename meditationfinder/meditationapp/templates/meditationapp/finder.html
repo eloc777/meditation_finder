@@ -3,7 +3,7 @@
 {% block title %}Find a session — Mindful Meetups{% endblock %}
 
 {% block content %}
-  <main class="flex-grow-1">
+  <main id="main-content" class="flex-grow-1">
     <div class="container py-4">
       <h1 class="h2 mb-2">Find a meditation session</h1>
       <p class="text-muted mb-4">Browse upcoming sessions, then learn more about the group behind each one.</p>
@@ -84,13 +84,12 @@
                   </select>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                  <label class="form-label" for="radius">Distance radius</label>
-                  <select class="form-select" id="radius" name="radius">
-                    <option value="">Any distance</option>
-                    <option value="2">Within 2 km</option>
-                    <option value="5">Within 5 km</option>
-                    <option value="10">Within 10 km</option>
-                    <option value="25">Within 25 km</option>
+                  <label class="form-label" for="religion">Religion</label>
+                  <select class="form-select" id="religion" name="religion">
+                    <option value="">Any religion</option>
+                    {% for religion in religion_options %}
+                      <option value="{{ religion }}" {% if selected_religion == religion %}selected{% endif %}>{{ religion }}</option>
+                    {% endfor %}
                   </select>
                 </div>
                 <div class="col-md-6 col-lg-3 d-flex align-items-end">
@@ -111,7 +110,10 @@
       </section>
 
       <section>
-        <h2 class="h5 mb-3">Upcoming sessions</h2>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <h2 class="h5 mb-0">Upcoming sessions</h2>
+          <p class="small text-muted mb-0">{{ result_count }} result{{ result_count|pluralize }}</p>
+        </div>
         {% if sessions %}
           <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for session in sessions %}
@@ -129,6 +131,7 @@
                       <li><i class="bi bi-clock me-1"></i><strong>When:</strong> {{ session.next_occurrence|date:"D g:i A" }}-{{ session.scheduled_to|date:"g:i A" }}</li>
                       <li><i class="bi bi-geo-alt me-1"></i><strong>Location:</strong> {{ session.display_location }}</li>
                       <li><i class="bi bi-flower1 me-1"></i><strong>Style:</strong> {{ session.display_style }}</li>
+                      <li><i class="bi bi-building me-1"></i><strong>Tradition:</strong> {{ session.group.religion|default:"Not specified" }}</li>
                       <li><i class="bi bi-wallet2 me-1"></i><strong>Cost:</strong> {{ session.group.get_cost_type_display }}</li>
                     </ul>
                     <button type="button" class="btn btn-outline-primary mt-auto" data-bs-toggle="modal" data-bs-target="#modalSession{{ session.id }}">View session</button>
@@ -185,6 +188,7 @@
               <dt class="col-sm-3">Recurrence</dt><dd class="col-sm-9"><span class="badge {{ session.recurrence_badge_class }}">{{ session.recurrence_label }}</span>{% if session.recurrence_pattern %} {{ session.recurrence_pattern }}{% endif %}</dd>
               <dt class="col-sm-3">Location</dt><dd class="col-sm-9">{{ session.display_location }}</dd>
               <dt class="col-sm-3">Style</dt><dd class="col-sm-9">{{ session.display_style }}</dd>
+              <dt class="col-sm-3">Tradition</dt><dd class="col-sm-9">{{ session.group.religion|default:"Not specified" }}</dd>
               <dt class="col-sm-3">Cost</dt><dd class="col-sm-9">{{ session.group.get_cost_type_display }}</dd>
               {% if session.meeting_link %}
                 <dt class="col-sm-3">Online</dt><dd class="col-sm-9"><a href="{{ session.meeting_link }}">Meeting link</a></dd>

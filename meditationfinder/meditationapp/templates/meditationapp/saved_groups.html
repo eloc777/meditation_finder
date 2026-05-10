@@ -3,9 +3,12 @@
 {% block title %}Saved groups — Mindful Meetups{% endblock %}
 
 {% block content %}
-  <main class="flex-grow-1">
+  <main id="main-content" class="flex-grow-1">
     <div class="container py-4">
-      <h1 class="h2 mb-2">Saved groups</h1>
+      <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
+        <h1 class="h2 mb-0">Saved groups</h1>
+        <p class="small text-muted mb-0">{{ saved_groups.paginator.count }} saved group{{ saved_groups.paginator.count|pluralize }}</p>
+      </div>
       <p class="text-muted mb-4">Groups you bookmarked from their profile page. You can open them again anytime from here.</p>
 
       {% if saved_groups.paginator.count %}
@@ -25,18 +28,11 @@
                   <tr>
                     <td>
                       <span class="fw-medium">{{ save.group.name }}</span>
-                      {% if save.group.status != 'approved' %}
-                        <span class="badge text-bg-secondary ms-1">No longer listed</span>
-                      {% endif %}
                     </td>
                     <td class="small text-muted">{{ save.group.suburb }}, {{ save.group.postcode }}</td>
                     <td class="small">{{ save.saved_at|date:"j M Y, g:i A" }}</td>
                     <td class="text-end">
-                      {% if save.group.status == 'approved' %}
-                        <a class="btn btn-sm btn-outline-primary" href="{% url 'group_profile' save.group.id %}">View profile</a>
-                      {% else %}
-                        <span class="small text-muted">—</span>
-                      {% endif %}
+                      <a class="btn btn-sm btn-outline-primary" href="{% url 'group_profile' save.group.id %}">View profile</a>
                     </td>
                   </tr>
                 {% endfor %}

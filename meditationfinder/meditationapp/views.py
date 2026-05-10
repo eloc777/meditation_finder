@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponseForbidden
@@ -8,14 +8,13 @@ from django.views.decorators.http import require_POST
 
 from .forms import MeditationGroupForm, SessionEditForm
 from .models import (
-    CandidateRecord,
-    CandidateStatus,
     CostType,
-    ExtractionAttempt,
     GroupStatus,
     MeditationGroup,
+    Role,
     SavedGroup,
     Session,
+    Source,
     Style,
     UserRole,
 )
@@ -36,10 +35,6 @@ TIME_OPTIONS = [
     {"value": "afternoon", "label": "Afternoon"},
     {"value": "evening", "label": "Evening"},
 ]
-
-
-def is_staff_user(user):
-    return user.is_authenticated and user.is_staff
 
 
 def user_manages_group(user, group_id):
@@ -63,6 +58,22 @@ def get_managed_groups(user):
     ).order_by("name")
 
 
+SESSION_LIST_PAGE_SIZE = 30
+
+
+def paginate_queryset(request, queryset, per_page):
+    paginator = Paginator(queryset, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+    return page_obj, query_params.urlencode()
+
+
+def paginate_group_dashboard_sessions(request, group):
+    sessions_qs = Session.objects.filter(group=group).order_by("scheduled_from", "title")
+    return paginate_queryset(request, sessions_qs, SESSION_LIST_PAGE_SIZE)
+
+
 # request.method (GET, POST, etc.)
 # request.GET (query params like ?q=zen&page=2)
 # request.POST (submitted form data)
@@ -76,9 +87,10 @@ def index(request):
     selected_suburb = request.GET.get("suburb", "")
     selected_style = request.GET.get("style", "")
     selected_cost = request.GET.get("cost", "")
+    selected_religion = request.GET.get("religion", "")
     selected_q = request.GET.get("q", "")
 
-    sessions = Session.objects.select_related("group").filter(group__status=GroupStatus.APPROVED) # start building the query
+    sessions = Session.objects.select_related("group") # start building the query
 
     if selected_q:
         sessions = sessions.filter( # we use Q() to build compound boolean expressions
@@ -119,18 +131,18 @@ def index(request):
     if selected_cost:
         sessions = sessions.filter(group__cost_type=selected_cost)
 
+    if selected_religion:
+        sessions = sessions.filter(group__religion__iexact=selected_religion)
+
     if request.GET.get("beginner_friendly"):
         sessions = sessions.filter(beginner_friendly=True)
 
     sessions = sessions.order_by("scheduled_from", "title")
-    paginator = Paginator(sessions, 30)
-    current_page_number = request.GET.get("page")
-    paginated_sessions = paginator.get_page(current_page_number)
+    paginated_sessions, pagination_query = paginate_queryset(
+        request, sessions, SESSION_LIST_PAGE_SIZE
+    )
 
-    query_params = request.GET.copy()
-    query_params.pop("page", None)
-
-    approved_sessions = Session.objects.select_related("group").filter(group__status=GroupStatus.APPROVED)
+    approved_sessions = Session.objects.select_related("group")
     suburb_values = sorted(
         {
             session.suburb or session.group.suburb
@@ -138,9 +150,18 @@ def index(request):
             if session.suburb or session.group.suburb
         }
     )
+    religion_values = sorted(
+        {
+            session.group.religion
+            for session in approved_sessions
+            if session.group.religion
+        }
+    )
     context = {
         "sessions": paginated_sessions,
+        "result_count": paginated_sessions.paginator.count,
         "suburbs": suburb_values,
+        "religion_options": religion_values,
         "day_options": DAY_OPTIONS,
         "time_options": TIME_OPTIONS,
         "style_options": Style.choices,
@@ -150,11 +171,12 @@ def index(request):
         "selected_suburb": selected_suburb,
         "selected_style": selected_style,
         "selected_cost": selected_cost,
+        "selected_religion": selected_religion,
         "selected_q": selected_q,
         "recurring_only": bool(request.GET.get("recurring")),
         "beginner_friendly": bool(request.GET.get("beginner_friendly")),
-        "more_filters_open": bool(selected_style or selected_cost or request.GET.get("beginner_friendly") or request.GET.get("radius")),
-        "pagination_query": query_params.urlencode(),
+        "more_filters_open": bool(selected_style or selected_cost or selected_religion or request.GET.get("beginner_friendly")),
+        "pagination_query": pagination_query,
     }
     return render(request, "meditationapp/finder.html", context)
 
@@ -172,6 +194,25 @@ def saved_groups(request):
 
 
 @login_required(login_url="account_login")
+def group_create(request):
+    if request.method == "POST":
+        form = MeditationGroupForm(request.POST, prefix="group")
+        if form.is_valid():
+            manager_role, _ = Role.objects.get_or_create(name="group_manager")
+            group = form.save(commit=False)
+            group.owner = request.user
+            group.source = Source.SELF
+            group.status = GroupStatus.APPROVED
+            group.save()
+            UserRole.objects.get_or_create(user=request.user, role=manager_role, group=group)
+            messages.success(request, "Group created. You can now manage details and sessions.")
+            return redirect("group_dashboard", group_id=group.id)
+    else:
+        form = MeditationGroupForm(prefix="group")
+    return render(request, "meditationapp/group_create.html", {"form": form})
+
+
+@login_required(login_url="account_login")
 def group_dashboard(request, group_id=None):
     groups = get_managed_groups(request.user)
     if group_id is None:
@@ -182,13 +223,14 @@ def group_dashboard(request, group_id=None):
     if not user_manages_group(request.user, group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
     group = get_object_or_404(MeditationGroup, id=group_id)
-    sessions = Session.objects.filter(group=group).order_by("scheduled_from", "title")
-    group_form = MeditationGroupForm(instance=group)
-    session_form = SessionEditForm()
+    paginated_sessions, pagination_query = paginate_group_dashboard_sessions(request, group)
+    group_form = MeditationGroupForm(instance=group, prefix="group")
+    session_form = SessionEditForm(prefix="session")
     return render(request, "meditationapp/group_dashboard.html", {
         "groups": groups,
         "group": group,
-        "sessions": sessions,
+        "sessions": paginated_sessions,
+        "pagination_query": pagination_query,
         "group_form": group_form,
         "session_form": session_form,
     })
@@ -200,20 +242,33 @@ def group_edit(request, group_id):
     if not user_manages_group(request.user, group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
     group = get_object_or_404(MeditationGroup, id=group_id)
-    form = MeditationGroupForm(request.POST, instance=group)
+    form = MeditationGroupForm(request.POST, instance=group, prefix="group")
     if form.is_valid():
         form.save()
         messages.success(request, "Group details saved.")
         return redirect("group_dashboard", group_id=group_id)
     groups = get_managed_groups(request.user)
-    sessions = Session.objects.filter(group=group).order_by("scheduled_from", "title")
+    paginated_sessions, pagination_query = paginate_group_dashboard_sessions(request, group)
     return render(request, "meditationapp/group_dashboard.html", {
         "groups": groups,
         "group": group,
-        "sessions": sessions,
+        "sessions": paginated_sessions,
+        "pagination_query": pagination_query,
         "group_form": form,
-        "session_form": SessionEditForm(),
+        "session_form": SessionEditForm(prefix="session"),
     })
+
+
+@login_required(login_url="account_login")
+@require_POST
+def group_delete(request, group_id):
+    if not user_manages_group(request.user, group_id):
+        return HttpResponseForbidden("You do not have permission to manage this group.")
+    group = get_object_or_404(MeditationGroup, id=group_id)
+    group_name = group.name
+    group.delete()
+    messages.success(request, f"{group_name} and its sessions were deleted.")
+    return redirect("group_dashboard_root")
 
 
 @login_required(login_url="account_login")
@@ -222,7 +277,7 @@ def session_create(request, group_id):
     if not user_manages_group(request.user, group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
     group = get_object_or_404(MeditationGroup, id=group_id)
-    form = SessionEditForm(request.POST)
+    form = SessionEditForm(request.POST, prefix="session")
     if form.is_valid():
         session = form.save(commit=False)
         session.group = group
@@ -230,12 +285,13 @@ def session_create(request, group_id):
         messages.success(request, "Session added.")
         return redirect("group_dashboard", group_id=group_id)
     groups = get_managed_groups(request.user)
-    sessions = Session.objects.filter(group=group).order_by("scheduled_from", "title")
+    paginated_sessions, pagination_query = paginate_group_dashboard_sessions(request, group)
     return render(request, "meditationapp/group_dashboard.html", {
         "groups": groups,
         "group": group,
-        "sessions": sessions,
-        "group_form": MeditationGroupForm(instance=group),
+        "sessions": paginated_sessions,
+        "pagination_query": pagination_query,
+        "group_form": MeditationGroupForm(instance=group, prefix="group"),
         "session_form": form,
     })
 
@@ -273,44 +329,8 @@ def session_delete(request, session_id):
     return redirect("group_dashboard", group_id=group_id)
 
 
-@user_passes_test(is_staff_user, login_url="account_login")
-def admin_dashboard(request):
-    pending_groups = MeditationGroup.objects.filter(status=GroupStatus.PENDING).order_by("created_at", "name")
-    approved_groups = MeditationGroup.objects.filter(status=GroupStatus.APPROVED).order_by("name")
-    failed_candidates = CandidateRecord.objects.filter(status__in=[CandidateStatus.FAILED, CandidateStatus.NEEDS_REVIEW]).order_by("-updated_at")[:25]
-    recent_extractions = ExtractionAttempt.objects.select_related("candidate").order_by("-created_at")[:25]
-    return render(
-        request,
-        "meditationapp/admin_dashboard.html",
-        {
-            "pending_groups": pending_groups,
-            "approved_groups": approved_groups,
-            "failed_candidates": failed_candidates,
-            "recent_extractions": recent_extractions,
-        },
-    )
-
-
-@user_passes_test(is_staff_user, login_url="account_login")
-@require_POST
-def approve_group(request, group_id):
-    group = get_object_or_404(MeditationGroup, id=group_id, status=GroupStatus.PENDING)
-    group.status = GroupStatus.APPROVED
-    group.save(update_fields=["status", "updated_at"])
-    return redirect("admin_dashboard")
-
-
-@user_passes_test(is_staff_user, login_url="account_login")
-@require_POST
-def reject_group(request, group_id):
-    group = get_object_or_404(MeditationGroup, id=group_id, status=GroupStatus.PENDING)
-    group.status = GroupStatus.REJECTED
-    group.save(update_fields=["status", "updated_at"])
-    return redirect("admin_dashboard")
-
-
 def group_profile(request, group_id):
-    group = get_object_or_404(MeditationGroup, id=group_id, status=GroupStatus.APPROVED)
+    group = get_object_or_404(MeditationGroup, id=group_id)
     sessions = Session.objects.filter(group=group).order_by("scheduled_from", "title")
     is_saved = False
     if request.user.is_authenticated:
@@ -325,7 +345,7 @@ def group_profile(request, group_id):
 @login_required(login_url="account_login")
 @require_POST
 def group_save(request, group_id):
-    group = get_object_or_404(MeditationGroup, id=group_id, status=GroupStatus.APPROVED)
+    group = get_object_or_404(MeditationGroup, id=group_id)
     _, created = SavedGroup.objects.get_or_create(user=request.user, group=group)
     if created:
         messages.success(request, "Group saved to your list. View it anytime under Saved groups.")
@@ -337,7 +357,7 @@ def group_save(request, group_id):
 @login_required(login_url="account_login")
 @require_POST
 def group_unsave(request, group_id):
-    group = get_object_or_404(MeditationGroup, id=group_id, status=GroupStatus.APPROVED)
+    group = get_object_or_404(MeditationGroup, id=group_id)
     SavedGroup.objects.filter(user=request.user, group=group).delete()
     messages.success(request, "Removed from your saved groups.")
     return redirect("group_profile", group_id=group_id)

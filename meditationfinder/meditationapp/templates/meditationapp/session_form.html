@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-  <div class="container py-4" style="max-width: 800px;">
+  <main id="main-content" class="container py-4" style="max-width: 800px;">
 
     {% if messages %}
       {% for message in messages %}
@@ -30,71 +30,71 @@
           {% csrf_token %}
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label" for="id_title">Title</label>
+              <label class="form-label" for="{{ form.title.id_for_label }}">Title</label>
               {{ form.title }}
               {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors }}</div>{% endif %}
             </div>
             <div class="col-md-6">
-              <label class="form-label" for="id_style">Style <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.style.id_for_label }}">Style <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.style }}
               {% if form.style.errors %}<div class="text-danger small mt-1">{{ form.style.errors }}</div>{% endif %}
             </div>
             <div class="col-12">
-              <label class="form-label" for="id_description">Description <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.description.id_for_label }}">Description <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.description }}
               {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors }}</div>{% endif %}
             </div>
             <div class="col-md-6">
-              <label class="form-label" for="id_scheduled_from">Starts</label>
+              <label class="form-label" for="{{ form.scheduled_from.id_for_label }}">Starts</label>
               {{ form.scheduled_from }}
               {% if form.scheduled_from.errors %}<div class="text-danger small mt-1">{{ form.scheduled_from.errors }}</div>{% endif %}
             </div>
             <div class="col-md-6">
-              <label class="form-label" for="id_scheduled_to">Ends</label>
+              <label class="form-label" for="{{ form.scheduled_to.id_for_label }}">Ends</label>
               {{ form.scheduled_to }}
               {% if form.scheduled_to.errors %}<div class="text-danger small mt-1">{{ form.scheduled_to.errors }}</div>{% endif %}
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="id_suburb">Suburb <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.suburb.id_for_label }}">Suburb <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.suburb }}
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="id_postcode">Postcode <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.postcode.id_for_label }}">Postcode <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.postcode }}
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="id_meeting_link">Meeting link <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.meeting_link.id_for_label }}">Meeting link <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.meeting_link }}
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="id_recurrence">Recurrence</label>
+              <label class="form-label" for="{{ form.recurrence.id_for_label }}">Recurrence</label>
               {{ form.recurrence }}
               {% if form.recurrence.errors %}<div class="text-danger small mt-1">{{ form.recurrence.errors }}</div>{% endif %}
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="id_recurrence_pattern">Recurrence details <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.recurrence_pattern.id_for_label }}">Recurrence details <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.recurrence_pattern }}
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="id_recurrence_end_date">Recurrence end date <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.recurrence_end_date.id_for_label }}">Recurrence end date <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.recurrence_end_date }}
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="id_max_participants">Max participants <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.max_participants.id_for_label }}">Max participants <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.max_participants }}
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="id_cost">Cost <span class="text-muted fw-normal">(optional)</span></label>
+              <label class="form-label" for="{{ form.cost.id_for_label }}">Cost <span class="text-muted fw-normal">(optional)</span></label>
               {{ form.cost }}
             </div>
             <div class="col-md-4 d-flex align-items-end gap-3 pb-1">
               <div class="form-check">
                 {{ form.is_recurring }}
-                <label class="form-check-label" for="id_is_recurring">Recurring</label>
+                <label class="form-check-label" for="{{ form.is_recurring.id_for_label }}">Recurring</label>
               </div>
               <div class="form-check">
                 {{ form.beginner_friendly }}
-                <label class="form-check-label" for="id_beginner_friendly">Beginner friendly</label>
+                <label class="form-check-label" for="{{ form.beginner_friendly.id_for_label }}">Beginner friendly</label>
               </div>
             </div>
           </div>
@@ -105,5 +105,5 @@
         </form>
       </div>
     </div>
-  </div>
+  </main>
 {% endblock %}

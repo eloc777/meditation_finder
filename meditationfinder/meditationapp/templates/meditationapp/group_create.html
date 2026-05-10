@@ -1,0 +1,70 @@
+{% extends "meditationapp/base.html" %}
+
+{% block title %}Create group — Mindful Meetups{% endblock %}
+
+{% block content %}
+  <main id="main-content" class="container py-4 py-md-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-body p-4">
+            <h1 class="h3 mb-3">Create a new group</h1>
+            <p class="text-muted mb-4">
+              Add the basic details below. Your group is available right away and can be edited any time in your dashboard.
+            </p>
+
+            <form method="post" action="{% url 'group_create' %}">
+              {% csrf_token %}
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label" for="{{ form.name.id_for_label }}">Name</label>
+                  {{ form.name }}
+                  {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+                  {{ form.description }}
+                  {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="{{ form.style.id_for_label }}">Style</label>
+                  {{ form.style }}
+                  {% if form.style.errors %}<div class="text-danger small mt-1">{{ form.style.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="{{ form.religion.id_for_label }}">Religion <span class="text-muted fw-normal">(optional)</span></label>
+                  {{ form.religion }}
+                  {% if form.religion.errors %}<div class="text-danger small mt-1">{{ form.religion.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="{{ form.cost_type.id_for_label }}">Cost type</label>
+                  {{ form.cost_type }}
+                  {% if form.cost_type.errors %}<div class="text-danger small mt-1">{{ form.cost_type.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="{{ form.suburb.id_for_label }}">Suburb</label>
+                  {{ form.suburb }}
+                  {% if form.suburb.errors %}<div class="text-danger small mt-1">{{ form.suburb.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="{{ form.postcode.id_for_label }}">Postcode</label>
+                  {{ form.postcode }}
+                  {% if form.postcode.errors %}<div class="text-danger small mt-1">{{ form.postcode.errors }}</div>{% endif %}
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="{{ form.link.id_for_label }}">Public link <span class="text-muted fw-normal">(optional)</span></label>
+                  {{ form.link }}
+                  {% if form.link.errors %}<div class="text-danger small mt-1">{{ form.link.errors }}</div>{% endif %}
+                </div>
+              </div>
+              <div class="d-flex flex-wrap gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-sm">Create group</button>
+                <a href="{% url 'group_dashboard_root' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}

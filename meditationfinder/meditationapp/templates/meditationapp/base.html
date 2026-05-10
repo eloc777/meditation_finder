@@ -8,9 +8,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   </head>
   <body class="{% block body_class %}bg-light d-flex flex-column min-vh-100{% endblock %}">
+    <a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 p-2 bg-white border rounded text-decoration-none" href="#main-content">Skip to main content</a>
     {% block header %}
       <header>
-        <nav class="{% block navbar_class %}navbar navbar-expand-lg navbar-dark bg-dark{% endblock %}">
+        <nav class="{% block navbar_class %}navbar navbar-expand-lg navbar-dark bg-dark{% endblock %}" aria-label="Primary">
           <div class="{% block navbar_container_class %}container{% endblock %}">
             {% block navbar_inner %}
               <a class="navbar-brand fw-semibold" href="{% url 'index' %}">Mindful Meetups</a>
@@ -20,24 +21,24 @@
               <div class="collapse navbar-collapse" id="navMain">
                 <ul class="navbar-nav ms-auto">
                   <li class="nav-item"> 
-                    <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'index' %}">Find sessions</a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" {% if request.resolver_match.url_name == 'index' %}aria-current="page"{% endif %} href="{% url 'index' %}">Find sessions</a>
                   </li>
                   {% if request.user.is_authenticated %}
                     <li class="nav-item">
-                      <a class="nav-link {% if request.resolver_match.url_name == 'saved_groups' %}active{% endif %}" href="{% url 'saved_groups' %}">Saved groups</a>
+                      <a class="nav-link {% if request.resolver_match.url_name == 'saved_groups' %}active{% endif %}" {% if request.resolver_match.url_name == 'saved_groups' %}aria-current="page"{% endif %} href="{% url 'saved_groups' %}">Saved groups</a>
                     </li>
                     <li class="nav-item">
-                      <a class="nav-link {% if 'group_dashboard' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'group_dashboard_root' %}">Group dashboard</a>
+                      <a class="nav-link {% if 'group_dashboard' in request.resolver_match.url_name %}active{% endif %}" {% if 'group_dashboard' in request.resolver_match.url_name %}aria-current="page"{% endif %} href="{% url 'group_dashboard_root' %}">Group dashboard</a>
                     </li>
                   {% endif %}
                   {% if request.user.is_authenticated and request.user.is_staff %}
                     <li class="nav-item">
-                      <a class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">Admin dashboard</a>
+                      <a class="nav-link" href="{% url 'admin:index' %}">Django admin</a>
                     </li>
                   {% endif %}
                   {% if not request.user.is_authenticated %}
                     <li class="nav-item">
-                      <a class="nav-link {% if request.resolver_match.url_name == 'account_login' %}active{% endif %}" href="{% url 'account_login' %}">Sign in</a>
+                      <a class="nav-link {% if request.resolver_match.url_name == 'account_login' %}active{% endif %}" {% if request.resolver_match.url_name == 'account_login' %}aria-current="page"{% endif %} href="{% url 'account_login' %}">Sign in</a>
                     </li>
                   {% endif %}
                   {% if request.user.is_authenticated %}
@@ -64,12 +65,19 @@
           <div class="row">
             <div class="col-md-8 mb-3 mb-md-0">
               <p class="small text-muted mb-0">
-                <strong>Managing a group?</strong> If you run one of the listed groups or your community group is not listed yet, please contact us at
-                <a href="mailto:admin@mindfulmeetups.com">admin@mindfulmeetups.com</a>.
+                <strong>Managing a group?</strong>
+                {% if request.user.is_authenticated %}
+                  Start by creating a draft group, then complete the details in your dashboard.
+                {% else %}
+                  If you run one of the listed groups or your community group is not listed yet, please contact us at
+                  <a href="mailto:admin@mindfulmeetups.com">admin@mindfulmeetups.com</a>.
+                {% endif %}
               </p>
             </div>
             <div class="col-md-4 text-md-end">
-              {% if not request.user.is_authenticated %}
+              {% if request.user.is_authenticated %}
+                <a class="btn btn-sm btn-primary" href="{% url 'group_create' %}">Create group</a>
+              {% else %}
                 <a class="btn btn-sm btn-outline-dark" href="{% url 'account_login' %}">Group manager login</a>
               {% endif %}
             </div>

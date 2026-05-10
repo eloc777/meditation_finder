@@ -100,6 +100,7 @@ SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APP": {
             "client_id": "15742818915-a5cft11phusgsms18rk38mrmev2ci44p.apps.googleusercontent.com",
+            "secret": os.getenv("GOOGLE_CLIENT_SECRET", ""),
         },
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {"access_type": "online"},

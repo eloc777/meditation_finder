@@ -26,9 +26,7 @@ class UserIdentity(models.Model):
 
 
 class GroupStatus(models.TextChoices):
-    PENDING = "pending", "Pending"
     APPROVED = "approved", "Approved"
-    REJECTED = "rejected", "Rejected"
 
 
 class CostType(models.TextChoices):
@@ -108,7 +106,7 @@ class MeditationGroup(models.Model):
     link = models.URLField(blank=True, null=True)
     cost_type = models.CharField(max_length=8, choices=CostType.choices)
     source = models.CharField(max_length=6, choices=Source.choices)
-    status = models.CharField(max_length=8, choices=GroupStatus.choices, default=GroupStatus.PENDING, db_index=True)
+    status = models.CharField(max_length=8, choices=GroupStatus.choices, default=GroupStatus.APPROVED, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -265,12 +263,16 @@ class Subscription(models.Model):
     archived_at = models.DateTimeField(blank=True, null=True)
     notes = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
-    is_archived = models.BooleanField(default=False, editable=False)
+    is_archived = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):
+        if self.is_archived and self.archived_at is None:
+            self.archived_at = timezone.now()
+        elif not self.is_archived:
+            self.archived_at = None
         self.is_archived = self.archived_at is not None
         super().save(*args, **kwargs)
 
