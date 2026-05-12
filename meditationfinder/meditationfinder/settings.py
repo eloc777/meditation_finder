@@ -90,6 +90,9 @@ LOGIN_REDIRECT_URL = "index"
 LOGOUT_REDIRECT_URL = "index"
 LOGIN_URL = "account_login"
 
+# Sign-up: always land on "index" (see account_adapter.post_login).
+ACCOUNT_ADAPTER = "meditationfinder.account_adapter.AccountAdapter"
+
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 SOCIALACCOUNT_AUTO_SIGNUP = True
 

@@ -80,6 +80,22 @@ def import_sessions_from_url(url, group_name, max_retries=2):
     )
 
 
+def extract_postcode_from_address(address):
+    parts = (address or "").split()
+    for part in reversed(parts):
+        if part.isdigit() and len(part) == 4:
+            return part
+    return ""
+
+
+def extract_suburb_from_address(address):
+    pieces = [piece.strip() for piece in (address or "").split(",") if piece.strip()]
+    if len(pieces) >= 2:
+        suburb_part = pieces[-2]
+        return " ".join(word for word in suburb_part.split() if not word.isdigit())
+    return ""
+
+
 def try_extract(client, group_name, url, page_text):
     """Call the LLM and return session dicts, or an empty list."""
     try:
@@ -88,7 +104,21 @@ def try_extract(client, group_name, url, page_text):
         logger.debug("LLM extraction failed for %s", url)
         return []
     raw_sessions = result.get("sessions") or []
-    return [s for s in raw_sessions if s.get("day") and s.get("start_time")]
+    page_address = (result.get("address") or "").strip()
+    page_suburb = extract_suburb_from_address(page_address) if page_address else ""
+    page_postcode = extract_postcode_from_address(page_address) if page_address else ""
+
+    filtered = []
+    for s in raw_sessions:
+        if not s.get("day") or not s.get("start_time"):
+            continue
+        row = dict(s)
+        if page_suburb and not (row.get("suburb") or "").strip():
+            row["suburb"] = page_suburb
+        if page_postcode and not (row.get("postcode") or "").strip():
+            row["postcode"] = page_postcode
+        filtered.append(row)
+    return filtered
 
 
 def prepare_session_for_save(session_data, group):
@@ -111,6 +141,9 @@ def prepare_session_for_save(session_data, group):
     recurrence = normalize_recurrence(session_data.get("recurrence"))
     is_recurring = recurrence != RecurrenceType.ONE_OFF
 
+    suburb = (session_data.get("suburb") or "").strip() or group.suburb
+    postcode = (session_data.get("postcode") or "").strip() or group.postcode
+
     return {
         "group": group,
         "title": session_data.get("session_type") or "Meditation session",
@@ -123,6 +156,8 @@ def prepare_session_for_save(session_data, group):
         "beginner_friendly": bool(session_data.get("beginner_friendly")),
         "scheduled_from": scheduled_from,
         "scheduled_to": scheduled_to,
+        "suburb": suburb,
+        "postcode": postcode,
         "cost": parse_cost(session_data.get("cost")),
     }
 

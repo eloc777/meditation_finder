@@ -25,6 +25,8 @@ class SessionItem(BaseModel):
     end_time: str = ""
     duration_minutes: int = 0
     session_type: str = ""
+    suburb: str = ""
+    postcode: str = ""
     recurrence: str = ""
     recurrence_note: str = ""
     recurrence_end_date: str = ""
@@ -49,6 +51,7 @@ SESSION_EXTRACT_TEMPLATE = """Extract recurring or upcoming meditation and mindf
 Use an empty sessions array when no real session is found. Do not invent times.
 If the page lists many identical weekly occurrences, return one session with recurrence set to "weekly".
 If an end time is not listed but a duration is mentioned (e.g. "1 hour"), set duration_minutes instead.
+When the page clearly gives a venue, suburb, or postcode for a specific session, set suburb and postcode on that session (Australian-style suburb and 4-digit postcode when possible). Leave suburb and postcode empty when unknown or when the location is only the same generic address you put in the top-level address field.
 
 Group name: {group_name}
 Website: {website_url}

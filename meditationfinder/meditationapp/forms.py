@@ -12,6 +12,9 @@ class MeditationGroupForm(forms.ModelForm):
     class Meta:
         model = MeditationGroup
         fields = ["name", "description", "style", "religion", "suburb", "postcode", "link", "cost_type"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 5}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -23,7 +26,7 @@ class MeditationGroupForm(forms.ModelForm):
             else:
                 field.widget.attrs.update({"class": "form-control"})
 
-# TODO handle form validation ui
+
 class SessionEditForm(forms.ModelForm):
     class Meta:
         model = Session
@@ -45,6 +48,9 @@ class SessionEditForm(forms.ModelForm):
             "max_participants",
             "cost",
         ]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 5}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

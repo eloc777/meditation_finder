@@ -106,92 +106,9 @@
           </section>
 
           <section class="card shadow-sm mb-4">
-            <div class="card-header fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
-              <span>Sessions</span>
-              {% if sessions.paginator.count %}
-                <span class="small text-muted fw-normal mb-0">{{ sessions.paginator.count }} session{{ sessions.paginator.count|pluralize }}</span>
-              {% endif %}
-            </div>
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead class="table-light">
-                    <tr>
-                        <th scope="col">Title</th>
-                        <th scope="col">Starts</th>
-                        <th scope="col">Ends</th>
-                        <th scope="col">Recurrence</th>
-                        <th scope="col">Location</th>
-                        <th scope="col">Meeting link</th>
-                        <th scope="col" class="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for session in sessions %}
-                      <tr>
-                        <td>{{ session.title }}</td>
-                        <td class="small">{{ session.scheduled_from|date:"D j M, g:i a" }}</td>
-                        <td class="small">{% if session.scheduled_to %}{{ session.scheduled_to|date:"g:i a" }}{% else %}—{% endif %}</td>
-                        <td>
-                          {% if session.is_recurring %}
-                            <span class="badge text-bg-primary">{{ session.get_recurrence_display }}</span>
-                          {% else %}
-                            <span class="badge text-bg-secondary">One-off</span>
-                          {% endif %}
-                        </td>
-                        <td class="small">{{ session.display_location }}</td>
-                        <td class="small">
-                          {% if session.meeting_link %}
-                            <a href="{{ session.meeting_link }}" target="_blank" rel="noopener">Link</a>
-                          {% else %}
-                            <span class="text-muted">—</span>
-                          {% endif %}
-                        </td>
-                        <td class="text-end text-nowrap">
-                          <a href="{% url 'session_edit' session_id=session.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                          <form action="{% url 'session_delete' session_id=session.id %}" method="post" class="d-inline"
-                                onsubmit="return confirm('Delete this session?')">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                          </form>
-                        </td>
-                      </tr>
-                    {% empty %}
-                      <tr>
-                        <td colspan="7" class="text-muted text-center py-3">No sessions yet. Add one below.</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-              {% if sessions.has_other_pages %}
-                <nav class="py-3 px-2" aria-label="Sessions pagination">
-                  <ul class="pagination justify-content-center flex-wrap mb-0">
-                    <li class="page-item {% if not sessions.has_previous %}disabled{% endif %}">
-                      <a class="page-link" href="{% if sessions.has_previous %}?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ sessions.previous_page_number }}{% else %}#{% endif %}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                      </a>
-                    </li>
-                    {% for page_number in sessions.paginator.page_range %}
-                      <li class="page-item {% if sessions.number == page_number %}active{% endif %}">
-                        <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_number }}">{{ page_number }}</a>
-                      </li>
-                    {% endfor %}
-                    <li class="page-item {% if not sessions.has_next %}disabled{% endif %}">
-                      <a class="page-link" href="{% if sessions.has_next %}?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ sessions.next_page_number }}{% else %}#{% endif %}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                      </a>
-                    </li>
-                  </ul>
-                </nav>
-              {% endif %}
-            </div>
-          </section>
-
-          <section class="card shadow-sm mb-4">
             <div class="card-header fw-semibold">Import sessions from a website</div>
             <div class="card-body">
-              <form action="{% url 'session_scan' group_id=group.id %}" method="post" class="row g-3 align-items-end">
+              <form id="session-scan-form" action="{% url 'session_scan' group_id=group.id %}" method="post" class="row g-3 align-items-end">
                 {% csrf_token %}
                 <div class="col">
                   <label class="form-label" for="id_scan_url">Website URL</label>
@@ -200,15 +117,35 @@
                          value="{{ scan_url }}" required>
                 </div>
                 <div class="col-auto">
-                  <button type="submit" class="btn btn-primary">Scan for sessions</button>
+                  <button type="submit" id="session-scan-submit" class="btn btn-primary">Scan for sessions</button>
                 </div>
               </form>
               <p class="form-text mt-2 mb-0">Paste a link to your website and we'll try to find your session schedule automatically.</p>
+              <div id="session-scan-progress" class="d-none mt-3">
+                <div class="alert alert-light border mb-0 py-2 d-flex align-items-center gap-2" role="status" aria-live="polite">
+                  <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                  <span class="small mb-0">Scanning your site… this can take up to a minute.</span>
+                </div>
+              </div>
+              <script>
+                (function () {
+                  var form = document.getElementById('session-scan-form');
+                  if (!form) return;
+                  var progress = document.getElementById('session-scan-progress');
+                  var btn = document.getElementById('session-scan-submit');
+                  var urlInput = document.getElementById('id_scan_url');
+                  form.addEventListener('submit', function () {
+                    if (progress) progress.classList.remove('d-none');
+                    if (btn) btn.disabled = true;
+                    if (urlInput) urlInput.readOnly = true;
+                  });
+                })();
+              </script>
 
               {% if imported_sessions %}
                 <hr>
                 <p class="text-muted small mb-3">
-                  To update details after saving, open <strong>Edit</strong> on any session in the <strong>Sessions</strong> section above.
+                  To update details after saving, open <strong>Edit</strong> on any session in the <strong>Sessions</strong> section below.
                 </p>
                 <form action="{% url 'session_bulk_create' group_id=group.id %}" method="post">
                   {% csrf_token %}
@@ -227,6 +164,8 @@
                           <th>End</th>
                           <th>Recurrence</th>
                           <th>Cost</th>
+                          <th>Suburb</th>
+                          <th>Postcode</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -242,6 +181,8 @@
                             <td>{{ s.display_end_time|default:"—" }}</td>
                             <td>{{ s.recurrence|default:"one-off" }}</td>
                             <td>{{ s.cost|default:"—" }}</td>
+                            <td>{% if s.suburb %}{{ s.suburb }}{% else %}<span class="text-muted">{{ group.suburb }}</span>{% endif %}</td>
+                            <td>{% if s.postcode %}{{ s.postcode }}{% else %}<span class="text-muted">{{ group.postcode }}</span>{% endif %}</td>
                           </tr>
                         {% endfor %}
                       </tbody>
@@ -263,7 +204,7 @@
             </div>
           </section>
 
-          <section class="card shadow-sm">
+          <section class="card shadow-sm mb-4">
             <div class="card-header fw-semibold">Add session manually</div>
             <div class="card-body">
               <form action="{% url 'session_create' group_id=group.id %}" method="post">
@@ -342,6 +283,89 @@
                   <button type="submit" class="btn btn-success">Add session</button>
                 </div>
               </form>
+            </div>
+          </section>
+
+          <section class="card shadow-sm mb-4">
+            <div class="card-header fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <span>Sessions</span>
+              {% if sessions.paginator.count %}
+                <span class="small text-muted fw-normal mb-0">{{ sessions.paginator.count }} session{{ sessions.paginator.count|pluralize }}</span>
+              {% endif %}
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                        <th scope="col">Title</th>
+                        <th scope="col">Starts</th>
+                        <th scope="col">Ends</th>
+                        <th scope="col">Recurrence</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Meeting link</th>
+                        <th scope="col" class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for session in sessions %}
+                      <tr>
+                        <td>{{ session.title }}</td>
+                        <td class="small">{{ session.scheduled_from|date:"D j M, g:i a" }}</td>
+                        <td class="small">{% if session.scheduled_to %}{{ session.scheduled_to|date:"g:i a" }}{% else %}—{% endif %}</td>
+                        <td>
+                          {% if session.is_recurring %}
+                            <span class="badge text-bg-primary">{{ session.get_recurrence_display }}</span>
+                          {% else %}
+                            <span class="badge text-bg-secondary">One-off</span>
+                          {% endif %}
+                        </td>
+                        <td class="small">{{ session.display_location }}</td>
+                        <td class="small">
+                          {% if session.meeting_link %}
+                            <a href="{{ session.meeting_link }}" target="_blank" rel="noopener">Link</a>
+                          {% else %}
+                            <span class="text-muted">—</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap">
+                          <a href="{% url 'session_edit' session_id=session.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                          <form action="{% url 'session_delete' session_id=session.id %}" method="post" class="d-inline"
+                                onsubmit="return confirm('Delete this session?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                          </form>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="7" class="text-muted text-center py-3">No sessions yet. Use the import or manual form above to add some.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% if sessions.has_other_pages %}
+                <nav class="py-3 px-2" aria-label="Sessions pagination">
+                  <ul class="pagination justify-content-center flex-wrap mb-0">
+                    <li class="page-item {% if not sessions.has_previous %}disabled{% endif %}">
+                      <a class="page-link" href="{% if sessions.has_previous %}?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ sessions.previous_page_number }}{% else %}#{% endif %}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                      </a>
+                    </li>
+                    {% for page_number in sessions.paginator.page_range %}
+                      <li class="page-item {% if sessions.number == page_number %}active{% endif %}">
+                        <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_number }}">{{ page_number }}</a>
+                      </li>
+                    {% endfor %}
+                    <li class="page-item {% if not sessions.has_next %}disabled{% endif %}">
+                      <a class="page-link" href="{% if sessions.has_next %}?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ sessions.next_page_number }}{% else %}#{% endif %}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                      </a>
+                    </li>
+                  </ul>
+                </nav>
+              {% endif %}
             </div>
           </section>
 

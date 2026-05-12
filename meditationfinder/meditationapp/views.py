@@ -84,19 +84,12 @@ def paginate_group_dashboard_sessions(request, group):
     return paginate_queryset(request, sessions_qs, SESSION_LIST_PAGE_SIZE)
 
 
-def group_dashboard_import_context(request):
+def group_dashboard_import_context(request, group_id):
     return {
-        "imported_sessions": request.session.get("imported_sessions"),
-        "scan_url": request.session.get("scan_url", ""),
+        "imported_sessions": request.session.get(f"meditationapp_imported_sessions_{group_id}"),
+        "scan_url": request.session.get(f"meditationapp_scan_url_{group_id}", ""),
     }
 
-
-# request.method (GET, POST, etc.)
-# request.GET (query params like ?q=zen&page=2)
-# request.POST (submitted form data)
-# request.user (current authenticated user)
-# request.path (URL path)
-# headers, cookies, session, files, etc.
 
 def index(request):
     selected_days = request.GET.getlist("day")
@@ -250,7 +243,7 @@ def group_dashboard(request, group_id=None):
         "pagination_query": pagination_query,
         "group_form": group_form,
         "session_form": session_form,
-        **group_dashboard_import_context(request),
+        **group_dashboard_import_context(request, group.id),
     })
 
 
@@ -274,7 +267,7 @@ def group_edit(request, group_id):
         "pagination_query": pagination_query,
         "group_form": form,
         "session_form": SessionEditForm(prefix="session"),
-        **group_dashboard_import_context(request),
+        **group_dashboard_import_context(request, group.id),
     })
 
 
@@ -312,7 +305,7 @@ def session_create(request, group_id):
         "pagination_query": pagination_query,
         "group_form": MeditationGroupForm(instance=group, prefix="group"),
         "session_form": form,
-        **group_dashboard_import_context(request),
+        **group_dashboard_import_context(request, group.id),
     })
 
 
@@ -363,8 +356,8 @@ def session_scan(request, group_id):
         found_sessions = import_sessions_from_url(url, group.name)
         for s in found_sessions:
             s["display_end_time"] = compute_display_end_time(s)
-        request.session["imported_sessions"] = found_sessions
-        request.session["scan_url"] = url
+        request.session[f"meditationapp_imported_sessions_{group_id}"] = found_sessions
+        request.session[f"meditationapp_scan_url_{group_id}"] = url
         messages.success(request, f"Found {len(found_sessions)} session(s). Review and save the ones you want.")
     except SessionImportError as exc:
         messages.warning(request, str(exc))
@@ -380,7 +373,7 @@ def session_bulk_create(request, group_id):
     if not user_manages_group(request.user, group_id):
         return HttpResponseForbidden("You do not have permission to manage this group.")
     group = get_object_or_404(MeditationGroup, id=group_id)
-    imported_sessions = request.session.get("imported_sessions")
+    imported_sessions = request.session.get(f"meditationapp_imported_sessions_{group_id}")
     if not imported_sessions:
         messages.warning(request, "No imported sessions to save. Try scanning a URL first.")
         return redirect("group_dashboard", group_id=group_id)
@@ -402,8 +395,8 @@ def session_bulk_create(request, group_id):
             saved_count += 1
     if saved_count:
         messages.success(request, f"Saved {saved_count} session(s).")
-        request.session.pop("imported_sessions", None)
-        request.session.pop("scan_url", None)
+        request.session.pop(f"meditationapp_imported_sessions_{group_id}", None)
+        request.session.pop(f"meditationapp_scan_url_{group_id}", None)
     else:
         messages.warning(request, "Could not save any sessions. The day/time data may not have been parseable.")
     return redirect("group_dashboard", group_id=group_id)
