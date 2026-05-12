@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Experiment: fetch one URL, suggest schedule pages, extract sessions via OpenAI — print the first 2 sessions.
+Experiment: fetch one URL, suggest schedule pages, extract sessions via OpenAI — print sessions as JSON.
 
-Same flow as extract_meditation_sessions (homepage + suggested pages -> extract_sessions).
+Same idea as the retired ingest pipeline: homepage plus a few suggested internal pages, then LLM session extraction.
 
   cd djangoapps/meditationfinder/meditationfinder
   python experiment_fetch_url.py
@@ -28,7 +28,7 @@ from meditationapp.pipeline.llm import LLMExtractionError, get_llm_client
 
 FETCH_URL = "https://asmy.org.au/west-end/"
 CANDIDATE_NAME = "Experiment"
-# How many extra internal pages to fetch after URL suggestion (same idea as --max-attempts)
+# How many extra internal pages to fetch after URL suggestion
 MAX_EXTRA_PAGES = 3
 
 
