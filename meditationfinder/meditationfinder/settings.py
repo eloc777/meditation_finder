@@ -97,9 +97,9 @@ ACCOUNT_ADAPTER = "meditationfinder.account_adapter.AccountAdapter"
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 SOCIALACCOUNT_AUTO_SIGNUP = True
 
-# Google OAuth: set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in `.env`.
-# Authorized redirect URI in Google Cloud Console (example):
-#   https://<your-host>/meditationfinder/accounts/google/login/callback/
+# Google OAuth: set GOOGLE_CLIENT_SECRET in `.env`.
+# Authorized redirect URI in Google Cloud Console:
+#   https://infs3202-7e53b724.uqcloud.net/meditationfinder/accounts/google/login/callback/
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APP": {
